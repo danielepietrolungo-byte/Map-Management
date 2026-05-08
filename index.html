@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestione Territori</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <h1>Gestione Territori Roccamorice</h1>
+    </header>
+
+    <main class="container">
+        <section class="search-section">
+            <input type="text" id="searchInput" placeholder="Cerca un territorio..." oninput="cercaMappa()" onfocus="resetCampo()">
+            <button onclick="cercaMappa()">Cerca</button>
+        </section>
+
+          <section class="filter-buttons">
+    <button onclick="filtraRapido('')" class="active">Tutti</button>
+    <button onclick="filtraRapido('Bolognano')">Bolognano</button>
+    <button onclick="filtraRapido('Musellaro')">Musellaro</button>
+    <button onclick="filtraRapido('Tocco')">Tocco Da Casauria</button>
+    <button onclick="filtraRapido('Piano')">Piano D'Orta</button>
+</section>
+
+        <section id="map-results" class="results-grid">
+            <div class="map-placeholder">Le tue mappe appariranno qui</div>
+        </section>
+
+
+    </main>
+
+</body>
+
+<script>
+    // Il tuo database locale
+const databaseMappe = [
+    { nome: "Bolognano 1", url: "/img/Bolognano 1.png"},
+    { nome: "Bolognano 2", url: "/img/Bolognano 2.png" },
+    { nome: "Bolognano 3", url: "/img/Bolognano 3.png" },
+    { nome: "Musellaro 1", url: "/img/Musellaro 1.png" },
+    { nome: "Musellaro 2", url: "/img/Musellaro 2.png" },
+    { nome: "Piano D'Orta", url: "/img/Piano D'Orta.png" },
+    { nome: "Tocco Da Casauria 1", url: "/img/Tocco Da Casauria 1.png" },
+    { nome: "Tocco Da Casauria 2", url: "/img/Tocco Da Casauria 2.png" },
+    { nome: "Tocco Da Casauria 3", url: "/img/Tocco Da Casauria 3.png" },
+    { nome: "Tocco Da Casauria 4", url: "/img/Tocco Da Casauria 4.png" },
+    { nome: "Tocco Da Casauria 5", url: "/img/Tocco Da Casauria 5.png" },
+    { nome: "Tocco Da Casauria 6", url: "/img/Tocco Da Casauria 6.png" },
+    { nome: "Tocco Da Casauria 7", url: "/img/Tocco Da Casauria 7.png" },
+    { nome: "Tocco Da Casauria 8", url: "/img/Tocco Da Casauria 8.png" },
+    { nome: "Tocco Da Casauria 9", url: "/img/Tocco Da Casauria 9.png" },
+    { nome: "Tocco Da Casauria 10", url: "/img/Tocco Da Casauria 10.png" },
+    { nome: "Tocco Da Casauria 11", url: "/img/Tocco Da Casauria 11.png" },
+    { nome: "Tocco Da Casauria 12", url: "/img/Tocco Da Casauria 12.png" },
+    { nome: "Tocco Da Casauria 13", url: "/img/Tocco Da Casauria 13.png" },
+    { nome: "Tocco Da Casauria 14", url: "/img/Tocco Da Casauria 14.png" },
+    { nome: "Tocco Da Casauria 15", url: "/img/Tocco Da Casauria 15.png" },
+    { nome: "Tocco Da Casauria 16", url: "/img/Tocco Da Casauria 16.png" },
+    { nome: "Tocco Da Casauria 17", url: "/img/Tocco Da Casauria 17.png" },
+    { nome: "Tocco Da Casauria 18", url: "/img/Tocco Da Casauria 18.png" },
+    { nome: "Tocco Da Casauria 19", url: "/img/Tocco Da Casauria 19.png" }
+
+];
+
+// Funzione per i pulsanti filtro
+function filtraRapido(categoria) {
+    // 1. Inserisce il testo nella barra di ricerca
+    document.getElementById("searchInput").value = categoria;
+
+    // 2. Rimuove la classe 'active' da tutti i pulsanti
+    const bottoni = document.querySelectorAll('.filter-buttons button');
+    bottoni.forEach(btn => btn.classList.remove('active'));
+
+    // 3. Aggiunge la classe 'active' al pulsante cliccato
+    // Usiamo event.currentTarget per identificare il tasto
+    event.currentTarget.classList.add('active');
+
+    // 4. Esegue la ricerca
+    cercaMappa();
+}
+
+function resetCampo() {
+    // 1. Svuota fisicamente il campo di ricerca
+    const input = document.getElementById("searchInput");
+    input.value = "";
+
+    // 2. Rimuove la classe 'active' da tutti i pulsanti per pulizia
+    const bottoni = document.querySelectorAll('.filter-buttons button');
+    bottoni.forEach(btn => btn.classList.remove('active'));
+
+    // 3. Riporta l'evidenza sul tasto "Tutti" (il primo della lista)
+    if (bottoni.length > 0) {
+        bottoni[0].classList.add('active');
+    }
+
+    // 4. Aggiorna la lista per mostrare di nuovo tutte le mappe
+    cercaMappa();
+}
+
+
+function cercaMappa() {
+    // Se l'utente digita, rimuoviamo l'evidenza dai pulsanti filtro
+    if (event && event.type === 'input') {
+        const bottoni = document.querySelectorAll('.filter-buttons button');
+        bottoni.forEach(btn => btn.classList.remove('active'));
+    }
+
+    const input = document.getElementById("searchInput").value.toLowerCase().trim();
+    const contenitore = document.getElementById("map-results");
+    
+    // Pulisce i risultati precedenti
+    contenitore.innerHTML = "";
+
+    // Filtra il database
+    const risultati = databaseMappe.filter(m => m.nome.toLowerCase().includes(input));
+
+    if (risultati.length > 0) {
+        risultati.forEach(mappa => {
+            const div = document.createElement("div");
+            div.className = "card";
+            div.innerHTML = `<img src="${mappa.url}" alt="${mappa.nome}"><h3>${mappa.nome}</h3>`;
+            div.style.cursor = "pointer";
+            div.onclick = function() {
+            window.open(mappa.url, "_blank");
+            };
+            
+            contenitore.appendChild(div);
+        });
+    } else {
+        contenitore.innerHTML = "<p>Nessuna mappa trovata.</p>";
+    }
+}
+</script>
+</html>

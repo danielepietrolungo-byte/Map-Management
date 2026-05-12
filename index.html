@@ -8,7 +8,7 @@
 </head>
 <body>
 
-    <div id="login-overlay">
+    <div id="login-overlay" style="display: block; position: fixed; top:0; left:0; width:100%; height:100%; background:white; z-index:9999; text-align:center; padding-top:100px;">
         <div class="login-box">
             <h2>Accesso Riservato</h2>
             <p>Inserisci la password per consultare i territori:</p>
@@ -25,7 +25,6 @@
 
     <div id="controls-section" style="display: none; position: sticky; top: 0; z-index: 1000; background: white; box-shadow: 0 4px 10px rgba(0,0,0,0.1); padding: 10px 0;">
         <main class="container" style="margin-top: 0; margin-bottom: 0;">
-            
             <section class="search-section" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; border: none;">
                 <input type="text" id="searchInput" placeholder="Cerca un territorio..." oninput="cercaMappa(event)" onfocus="resetCampo()" style="flex: 1; min-width: 200px;">
                 <button onclick="cercaMappa()">Cerca</button>
@@ -46,11 +45,10 @@
                 <button onclick="filtraStato(event, 'disponibile')" class="status-btn">Solo Disponibili</button>
                 <button onclick="filtraStato(event, 'occupato')" class="status-btn">Solo Assegnati</button>
             </section>
-
         </main>
     </div>
 
-    <main class="container">
+    <main class="container" style="margin-top: 20px;">
         <section id="map-results" class="results-grid">
             </section>
     </main>
@@ -60,6 +58,7 @@
     let filtroStatoAttuale = 'tutti';
     let autoRefreshInterval;
 
+    // Controllo accesso
     window.onload = function() {
         if (localStorage.getItem("accessoTerritori") === "ok") {
             mostraContenuti();
@@ -75,14 +74,12 @@
     function controllaPassword() {
         const passwordCorretta = "Rocca2026"; 
         const input = document.getElementById("passwordInput").value;
-
         if (input === passwordCorretta) {
             localStorage.setItem("accessoTerritori", "ok");
             mostraContenuti();
             avviaApp();
         } else {
             document.getElementById("errore").style.display = "block";
-            document.getElementById("passwordInput").value = "";
         }
     }
 
@@ -98,6 +95,7 @@
         try {
             const response = await fetch(URL_SCRIPT);
             databaseMappe = await response.json();
+            console.log("Dati ricevuti:", databaseMappe); // Per controllo in console
             cercaMappa(); 
             if(statusEl) statusEl.innerText = "Ultimo aggiornamento: " + new Date().toLocaleTimeString();
         } catch (error) {
@@ -122,27 +120,18 @@
     }
 
     function resetCampo() {
-        const campo = document.getElementById("searchInput");
-        if (campo.value !== "") {
-            campo.value = "";
-        }
+        document.getElementById("searchInput").value = "";
     }
 
     function cercaMappa(e) {
-        if (e && e.type === 'input') {
-            const bottoni = document.querySelectorAll('.filter-buttons button:not(.status-btn)');
-            bottoni.forEach(btn => btn.classList.remove('active'));
-        }
-
         const input = document.getElementById("searchInput").value.toLowerCase().trim();
         const contenitore = document.getElementById("map-results");
         if (!contenitore) return;
+        
         contenitore.innerHTML = "";
 
-        if (databaseMappe.length === 0) {
-            if (document.getElementById("login-overlay").style.display === "none") {
-                contenitore.innerHTML = "<p>Sincronizzazione in corso...</p>";
-            }
+        if (!databaseMappe || databaseMappe.length === 0) {
+            contenitore.innerHTML = "<p>Nessun dato disponibile o caricamento in corso...</p>";
             return;
         }
 
@@ -150,16 +139,18 @@
             const matchTesto = m.nome.toLowerCase().includes(input);
             const dispVal = m.disponibile ? m.disponibile.toString().toLowerCase().trim() : "";
             const isLibero = dispVal === "sì" || dispVal === "si" || dispVal === "true";
+            
             let matchStato = true;
             if (filtroStatoAttuale === 'disponibile') matchStato = isLibero;
             if (filtroStatoAttuale === 'occupato') matchStato = !isLibero;
+
             return matchTesto && matchStato;
         });
 
         if (risultati.length > 0) {
             risultati.forEach(mappa => {
                 let urlAnteprima = mappa.url;
-                if (mappa.url.includes("drive.google.com")) {
+                if (mappa.url && mappa.url.includes("drive.google.com")) {
                     const match = mappa.url.match(/\/d\/([^\/]+)/);
                     if (match) urlAnteprima = `https://drive.google.com/thumbnail?id=${match[1]}&sz=w800`;
                 }
@@ -174,7 +165,7 @@
                 div.style.cursor = "pointer";
                 div.innerHTML = `
                     <div style="position: relative; overflow: hidden;">
-                        <img src="${urlAnteprima}" alt="${mappa.nome}" onerror="this.src='https://via.placeholder.com/300x200?text=Territorio'">
+                        <img src="${urlAnteprima}" alt="${mappa.nome}" style="width:100%; display:block;" onerror="this.src='https://via.placeholder.com/300x200?text=Territorio'">
                         <span style="position: absolute; top: 10px; right: 10px; background: ${coloreStato}; color: white; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; text-transform: uppercase;">
                             ${testoStato}
                         </span>
@@ -190,7 +181,7 @@
                 contenitore.appendChild(div);
             });
         } else {
-            contenitore.innerHTML = "<p style='padding:20px;'>Nessun risultato trovato.</p>";
+            contenitore.innerHTML = "<p style='padding:20px;'>Nessun territorio trovato.</p>";
         }
     }
 

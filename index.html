@@ -24,9 +24,10 @@
     </header>
 
     <main class="container">
-        <section class="search-section">
-            <input type="text" id="searchInput" placeholder="Cerca un territorio..." oninput="cercaMappa(event)" onfocus="resetCampo()">
+        <section class="search-section" style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <input type="text" id="searchInput" placeholder="Cerca un territorio..." oninput="cercaMappa(event)" onfocus="resetCampo()" style="flex: 1; min-width: 200px;">
             <button onclick="cercaMappa()">Cerca</button>
+            <button onclick="caricaDatiDaSheet()" title="Aggiorna dati dal server" style="background-color: #6c757d;">🔄</button>
         </section>
 
         <section class="filter-buttons">
@@ -63,9 +64,8 @@
 
     function avviaApp() {
         caricaDatiDaSheet();
-        // Imposta il refresh automatico ogni 5 minuti (300000 ms)
         if (autoRefreshInterval) clearInterval(autoRefreshInterval);
-        autoRefreshInterval = setInterval(caricaDatiDaSheet, 300000);
+        autoRefreshInterval = setInterval(caricaDatiDaSheet, 300000); // 5 minuti
     }
 
     function controllaPassword() {
@@ -88,12 +88,12 @@
         const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbyCZFQgVEM6GIRTFW3lbMe-_qq_78eAL-B8QvAbSI4zMe1WrzKn2f-YaMLnY-ZiOL4/exec";
         const statusEl = document.getElementById("refresh-status");
         
-        if(statusEl) statusEl.innerText = "Aggiornamento in corso...";
+        if(statusEl) statusEl.innerText = "Sincronizzazione...";
 
         try {
             const response = await fetch(URL_SCRIPT);
             databaseMappe = await response.json();
-            cercaMappa(); // Riesegue il filtro corrente sui nuovi dati
+            cercaMappa(); 
             
             if(statusEl) {
                 const adesso = new Date().toLocaleTimeString();
@@ -101,11 +101,9 @@
             }
         } catch (error) {
             console.error("Errore fetch:", error);
-            if(statusEl) statusEl.innerText = "Errore aggiornamento";
+            if(statusEl) statusEl.innerText = "Errore di connessione";
         }
     }
-
-    // --- LOGICA FILTRI ---
 
     function filtraRapido(e, categoria) {
         document.getElementById("searchInput").value = categoria;
@@ -145,7 +143,9 @@
         contenitore.innerHTML = "";
 
         if (databaseMappe.length === 0) {
-            contenitore.innerHTML = "<p>Caricamento dati...</p>";
+            if (document.getElementById("login-overlay").style.display === "none") {
+                contenitore.innerHTML = "<p>Caricamento mappe in corso...</p>";
+            }
             return;
         }
 
@@ -197,7 +197,6 @@
         }
     }
 
-    // Listener per la password
     document.getElementById("passwordInput")?.addEventListener("keypress", (e) => {
         if (e.key === "Enter") controllaPassword();
     });

@@ -9,162 +9,198 @@
 <body>
 
     <div id="login-overlay">
-    <div class="login-box">
-        <h2>Accesso Riservato</h2>
-        <p>Inserisci la password per consultare i territori:</p>
-        <input type="password" id="passwordInput" placeholder="Password">
-        <button onclick="controllaPassword()">Entra</button>
-        <p id="errore" style="color: red; display: none;">Password errata!</p>
+        <div class="login-box">
+            <h2>Accesso Riservato</h2>
+            <p>Inserisci la password per consultare i territori:</p>
+            <input type="password" id="passwordInput" placeholder="Password">
+            <button onclick="controllaPassword()">Entra</button>
+            <p id="errore" style="color: red; display: none;">Password errata!</p>
+        </div>
     </div>
-</div>
 
     <header>
         <h1>Gestione Territori Roccamorice</h1>
+        <div id="refresh-status" style="font-size: 10px; color: #aaa; margin-top: 5px;">Dati aggiornati</div>
     </header>
 
     <main class="container">
         <section class="search-section">
-            <input type="text" id="searchInput" placeholder="Cerca un territorio..." oninput="cercaMappa()" onfocus="resetCampo()">
+            <input type="text" id="searchInput" placeholder="Cerca un territorio..." oninput="cercaMappa(event)" onfocus="resetCampo()">
             <button onclick="cercaMappa()">Cerca</button>
         </section>
 
-          <section class="filter-buttons">
-    <button onclick="filtraRapido('')" class="active">Tutti</button>
-    <button onclick="filtraRapido('Bolognano')">Bolognano</button>
-    <button onclick="filtraRapido('Musellaro')">Musellaro</button>
-    <button onclick="filtraRapido('Tocco')">Tocco Da Casauria</button>
-    <button onclick="filtraRapido('Piano')">Piano D'Orta</button>
-</section>
+        <section class="filter-buttons">
+            <button onclick="filtraRapido(event, '')" class="active">Tutti</button>
+            <button onclick="filtraRapido(event, 'Bolognano')">Bolognano</button>
+            <button onclick="filtraRapido(event, 'Musellaro')">Musellaro</button>
+            <button onclick="filtraRapido(event, 'Tocco')">Tocco Da Casauria</button>
+            <button onclick="filtraRapido(event, 'Piano')">Piano D'Orta</button>
+            <button onclick="filtraRapido(event, 'Roccamorice')">Roccamorice</button>
+        </section>
+
+        <section class="filter-buttons" style="margin-top: 10px; border-top: 1px solid #ddd; padding-top: 15px;">
+            <button onclick="filtraStato(event, 'tutti')" class="status-btn active">Mostra Tutti</button>
+            <button onclick="filtraStato(event, 'disponibile')" class="status-btn">Solo Disponibili</button>
+            <button onclick="filtraStato(event, 'occupato')" class="status-btn">Solo Assegnati</button>
+        </section>
 
         <section id="map-results" class="results-grid">
             <div class="map-placeholder">Le tue mappe appariranno qui</div>
         </section>
-
-
     </main>
 
-</body>
-
 <script>
+    let databaseMappe = []; 
+    let filtroStatoAttuale = 'tutti';
+    let autoRefreshInterval;
+
+    window.onload = function() {
+        if (localStorage.getItem("accessoTerritori") === "ok") {
+            document.getElementById("login-overlay").style.display = "none";
+            avviaApp();
+        }
+    };
+
+    function avviaApp() {
+        caricaDatiDaSheet();
+        // Imposta il refresh automatico ogni 5 minuti (300000 ms)
+        if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+        autoRefreshInterval = setInterval(caricaDatiDaSheet, 300000);
+    }
 
     function controllaPassword() {
-    const passwordCorretta = "Rocca2024"; // <-- CAMBIA QUESTA CON LA TUA PASSWORD
-    const input = document.getElementById("passwordInput").value;
-    const errore = document.getElementById("errore");
-    const overlay = document.getElementById("login-overlay");
+        const passwordCorretta = "Rocca2026"; 
+        const input = document.getElementById("passwordInput").value;
+        const errore = document.getElementById("errore");
+        const overlay = document.getElementById("login-overlay");
 
-    if (input === passwordCorretta) {
-        overlay.style.display = "none"; // Nasconde il login e mostra il sito
-        cercaMappa(); // Carica le mappe all'ingresso
-    } else {
-        errore.style.display = "block";
-        document.getElementById("passwordInput").value = ""; // Svuota il campo
-    }
-}
-
-// Permette di premere "Invio" sulla tastiera per entrare
-document.getElementById("passwordInput")?.addEventListener("keypress", function(e) {
-    if (e.key === "Enter") {
-        controllaPassword();
-    }
-});
-    // Il tuo database locale
-const databaseMappe = [
-    { nome: "Bolognano 1", url: "/img/Bolognano 1.png"},
-    { nome: "Bolognano 2", url: "/img/Bolognano 2.png" },
-    { nome: "Bolognano 3", url: "/img/Bolognano 3.png" },
-    { nome: "Musellaro 1", url: "/img/Musellaro 1.png" },
-    { nome: "Musellaro 2", url: "/img/Musellaro 2.png" },
-    { nome: "Piano D'Orta", url: "/img/Piano D'Orta.png" },
-    { nome: "Tocco Da Casauria 1", url: "/img/Tocco Da Casauria 1.png" },
-    { nome: "Tocco Da Casauria 2", url: "/img/Tocco Da Casauria 2.png" },
-    { nome: "Tocco Da Casauria 3", url: "/img/Tocco Da Casauria 3.png" },
-    { nome: "Tocco Da Casauria 4", url: "/img/Tocco Da Casauria 4.png" },
-    { nome: "Tocco Da Casauria 5", url: "/img/Tocco Da Casauria 5.png" },
-    { nome: "Tocco Da Casauria 6", url: "/img/Tocco Da Casauria 6.png" },
-    { nome: "Tocco Da Casauria 7", url: "/img/Tocco Da Casauria 7.png" },
-    { nome: "Tocco Da Casauria 8", url: "/img/Tocco Da Casauria 8.png" },
-    { nome: "Tocco Da Casauria 9", url: "/img/Tocco Da Casauria 9.png" },
-    { nome: "Tocco Da Casauria 10", url: "/img/Tocco Da Casauria 10.png" },
-    { nome: "Tocco Da Casauria 11", url: "/img/Tocco Da Casauria 11.png" },
-    { nome: "Tocco Da Casauria 12", url: "/img/Tocco Da Casauria 12.png" },
-    { nome: "Tocco Da Casauria 13", url: "/img/Tocco Da Casauria 13.png" },
-    { nome: "Tocco Da Casauria 14", url: "/img/Tocco Da Casauria 14.png" },
-    { nome: "Tocco Da Casauria 15", url: "/img/Tocco Da Casauria 15.png" },
-    { nome: "Tocco Da Casauria 16", url: "/img/Tocco Da Casauria 16.png" },
-    { nome: "Tocco Da Casauria 17", url: "/img/Tocco Da Casauria 17.png" },
-    { nome: "Tocco Da Casauria 18", url: "/img/Tocco Da Casauria 18.png" },
-    { nome: "Tocco Da Casauria 19", url: "/img/Tocco Da Casauria 19.png" }
-
-];
-
-// Funzione per i pulsanti filtro
-function filtraRapido(categoria) {
-    // 1. Inserisce il testo nella barra di ricerca
-    document.getElementById("searchInput").value = categoria;
-
-    // 2. Rimuove la classe 'active' da tutti i pulsanti
-    const bottoni = document.querySelectorAll('.filter-buttons button');
-    bottoni.forEach(btn => btn.classList.remove('active'));
-
-    // 3. Aggiunge la classe 'active' al pulsante cliccato
-    // Usiamo event.currentTarget per identificare il tasto
-    event.currentTarget.classList.add('active');
-
-    // 4. Esegue la ricerca
-    cercaMappa();
-}
-
-function resetCampo() {
-    // 1. Svuota fisicamente il campo di ricerca
-    const input = document.getElementById("searchInput");
-    input.value = "";
-
-    // 2. Rimuove la classe 'active' da tutti i pulsanti per pulizia
-    const bottoni = document.querySelectorAll('.filter-buttons button');
-    bottoni.forEach(btn => btn.classList.remove('active'));
-
-    // 3. Riporta l'evidenza sul tasto "Tutti" (il primo della lista)
-    if (bottoni.length > 0) {
-        bottoni[0].classList.add('active');
+        if (input === passwordCorretta) {
+            localStorage.setItem("accessoTerritori", "ok");
+            overlay.style.display = "none";
+            avviaApp();
+        } else {
+            errore.style.display = "block";
+            document.getElementById("passwordInput").value = "";
+        }
     }
 
-    // 4. Aggiorna la lista per mostrare di nuovo tutte le mappe
-    cercaMappa();
-}
+    async function caricaDatiDaSheet() {
+        const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbyCZFQgVEM6GIRTFW3lbMe-_qq_78eAL-B8QvAbSI4zMe1WrzKn2f-YaMLnY-ZiOL4/exec";
+        const statusEl = document.getElementById("refresh-status");
+        
+        if(statusEl) statusEl.innerText = "Aggiornamento in corso...";
 
+        try {
+            const response = await fetch(URL_SCRIPT);
+            databaseMappe = await response.json();
+            cercaMappa(); // Riesegue il filtro corrente sui nuovi dati
+            
+            if(statusEl) {
+                const adesso = new Date().toLocaleTimeString();
+                statusEl.innerText = "Ultimo aggiornamento: " + adesso;
+            }
+        } catch (error) {
+            console.error("Errore fetch:", error);
+            if(statusEl) statusEl.innerText = "Errore aggiornamento";
+        }
+    }
 
-function cercaMappa() {
-    // Se l'utente digita, rimuoviamo l'evidenza dai pulsanti filtro
-    if (event && event.type === 'input') {
+    // --- LOGICA FILTRI ---
+
+    function filtraRapido(e, categoria) {
+        document.getElementById("searchInput").value = categoria;
+        const bottoni = document.querySelectorAll('.filter-buttons button:not(.status-btn)');
+        bottoni.forEach(btn => btn.classList.remove('active'));
+        if (e && e.currentTarget) e.currentTarget.classList.add('active');
+        cercaMappa();
+    }
+
+    function filtraStato(e, stato) {
+        filtroStatoAttuale = stato;
+        const bottoniStato = document.querySelectorAll('.status-btn');
+        bottoniStato.forEach(btn => btn.classList.remove('active'));
+        if (e && e.currentTarget) e.currentTarget.classList.add('active');
+        cercaMappa();
+    }
+
+    function resetCampo() {
+        document.getElementById("searchInput").value = "";
         const bottoni = document.querySelectorAll('.filter-buttons button');
         bottoni.forEach(btn => btn.classList.remove('active'));
+        if (bottoni.length > 0) bottoni[0].classList.add('active');
+        filtroStatoAttuale = 'tutti';
+        cercaMappa();
     }
 
-    const input = document.getElementById("searchInput").value.toLowerCase().trim();
-    const contenitore = document.getElementById("map-results");
-    
-    // Pulisce i risultati precedenti
-    contenitore.innerHTML = "";
+    function cercaMappa(e) {
+        if (e && e.type === 'input') {
+            const bottoni = document.querySelectorAll('.filter-buttons button:not(.status-btn)');
+            bottoni.forEach(btn => btn.classList.remove('active'));
+        }
 
-    // Filtra il database
-    const risultati = databaseMappe.filter(m => m.nome.toLowerCase().includes(input));
+        const input = document.getElementById("searchInput").value.toLowerCase().trim();
+        const contenitore = document.getElementById("map-results");
+        if (!contenitore) return;
+        
+        contenitore.innerHTML = "";
 
-    if (risultati.length > 0) {
-        risultati.forEach(mappa => {
-            const div = document.createElement("div");
-            div.className = "card";
-            div.innerHTML = `<img src="${mappa.url}" alt="${mappa.nome}"><h3>${mappa.nome}</h3>`;
-            div.style.cursor = "pointer";
-            div.onclick = function() {
-            window.open(mappa.url, "_blank");
-            };
-            
-            contenitore.appendChild(div);
+        if (databaseMappe.length === 0) {
+            contenitore.innerHTML = "<p>Caricamento dati...</p>";
+            return;
+        }
+
+        const risultati = databaseMappe.filter(m => {
+            const matchTesto = m.nome.toLowerCase().includes(input);
+            const dispVal = m.disponibile ? m.disponibile.toString().toLowerCase().trim() : "";
+            const isLibero = dispVal === "sì" || dispVal === "si" || dispVal === "true";
+            let matchStato = true;
+            if (filtroStatoAttuale === 'disponibile') matchStato = isLibero;
+            if (filtroStatoAttuale === 'occupato') matchStato = !isLibero;
+            return matchTesto && matchStato;
         });
-    } else {
-        contenitore.innerHTML = "<p>Nessuna mappa trovata.</p>";
+
+        if (risultati.length > 0) {
+            risultati.forEach(mappa => {
+                let urlAnteprima = mappa.url;
+                if (mappa.url.includes("drive.google.com")) {
+                    const match = mappa.url.match(/\/d\/([^\/]+)/);
+                    if (match) urlAnteprima = `https://drive.google.com/thumbnail?id=${match[1]}&sz=w800`;
+                }
+
+                const dispVal = mappa.disponibile ? mappa.disponibile.toString().toLowerCase().trim() : "";
+                const isLibero = dispVal === "sì" || dispVal === "si" || dispVal === "true";
+                const coloreStato = isLibero ? "#2ecc71" : "#e74c3c";
+                const testoStato = isLibero ? "Disponibile" : "Assegnato";
+
+                const div = document.createElement("div");
+                div.className = "card";
+                div.style.cursor = "pointer";
+                div.innerHTML = `
+                    <div style="position: relative; overflow: hidden;">
+                        <img src="${urlAnteprima}" alt="${mappa.nome}" onerror="this.src='https://via.placeholder.com/300x200?text=Territorio'">
+                        <span style="position: absolute; top: 10px; right: 10px; background: ${coloreStato}; color: white; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; text-transform: uppercase;">
+                            ${testoStato}
+                        </span>
+                    </div>
+                    <div style="padding: 15px;">
+                        <h3 style="margin: 0 0 8px 0; font-size: 1.1rem;">${mappa.nome}</h3>
+                        <p style="margin: 0; font-size: 0.9rem; color: #555;">
+                            <strong>Assegnato a:</strong> ${mappa.assegnato || '<i>Nessuno</i>'}
+                        </p>
+                    </div>
+                `;
+                div.onclick = () => window.open(mappa.url, "_blank");
+                contenitore.appendChild(div);
+            });
+        } else {
+            contenitore.innerHTML = "<p>Nessun territorio trovato.</p>";
+        }
     }
-}
+
+    // Listener per la password
+    document.getElementById("passwordInput")?.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") controllaPassword();
+    });
 </script>
+</body>
 </html>

@@ -150,3 +150,105 @@ button {
     box-shadow: 0 8px 12px rgba(241, 238, 238, 0); /* L'ombra diventa più scura */
     background-color: hwb(221 46% 28%);
 }
+/* Layout della Card */
+.card {
+    position: relative;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    overflow: hidden;
+    transition: 0.3s;
+}
+
+.card-body { padding: 15px; }
+
+/* Badge Dinamici */
+.badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    text-transform: uppercase;
+    z-index: 2;
+}
+
+.badge-verde { background-color: #27ae60; } /* Disponibile */
+.badge-rosso { background-color: #c0392b; } /* Non disponibile */
+
+/* Testo Assegnato */
+.assegnato-testo {
+    color: #555;
+    font-size: 14px;
+    margin-top: 8px;
+}
+.card-body {
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.card-body input, .card-body select {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 14px;
+}
+
+.btn-save {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-top: 10px;
+}
+
+.btn-save:hover { background-color: #2980b9; }
+
+.link-mappa {
+    text-align: center;
+    color: #3498db;
+    cursor: pointer;
+    font-size: 12px;
+    margin-top: 10px;
+    text-decoration: underline;
+}
+.card-image-container {
+    position: relative;
+}
+
+.badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    color: white;
+}
+
+.badge-disponibile {
+    background-color: #2ecc71; /* Verde */
+}
+
+.badge-occupato {
+    background-color: #e74c3c; /* Rosso */
+}
+
+.assegnato-a {
+    font-size: 0.9rem;
+    color: #555;
+    margin-top: 5px;
+}
+
+.card-body {
+    padding: 15px;
+}

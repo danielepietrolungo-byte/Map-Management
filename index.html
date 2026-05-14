@@ -6,6 +6,17 @@
     <title>Gestione Territori</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="manifest.json">
+    <meta name="theme-color" content="#2c3e50">
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js')
+        .then(reg => console.log('Service Worker registrato con successo!', reg))
+        .catch(err => console.log('Errore registrazione Service Worker:', err));
+    });
+  }
+</script>
 </head>
 <body>
 

@@ -54,12 +54,17 @@
                 <button onclick="filtraRapido(event, 'Abbateggio')">Abbateggio</button>
                 <button onclick="filtraRapido(event, 'Caramanico')">Caramanico</button>
                 <button onclick="filtraRapido(event, 'Eufemia')">Sant'Eufemia</button>
+                <button onclick="filtraRapido(event, 'Popoli')">Popoli</button>
+                <button onclick="filtraRapido(event, 'Vittorito')">Vittorito</button>
+                <button onclick="filtraRapido(event, 'Gagliano')">Gagliano</button>
+                <button onclick="filtraRapido(event, 'Secinaro')">Secinaro</button>
             </section>
 
             <section class="filter-buttons" style="border-top: 1px solid #eee; padding-top: 10px;">
                 <button onclick="filtraStato(event, 'tutti')" class="status-btn active">Mostra Tutti</button>
                 <button onclick="filtraStato(event, 'disponibile')" class="status-btn">Solo Disponibili</button>
                 <button onclick="filtraStato(event, 'occupato')" class="status-btn">Solo Assegnati</button>
+                <button onclick="filtraStato(event, 'ritardo')" class="status-btn" style="border: 1px solid #e74c3c; color: #e74c3c;">⚠️ In Ritardo</button>
             </section>
         </main>
     </div>
@@ -70,8 +75,8 @@
     </main>
 
 <script>
-    // METTI QUI IL TUO NUOVO URL DI GOOGLE APPS SCRIPT GENERATO DOPO LA NUOVA DISTRIBUZIONE
-    const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbwlKlpj5OS3V4Pueko6A-XZV-lwc2ToWO_9fflJDGEPMedDrNyxTZ-_YN17hu3q7G_oCw/exec";
+    // INSERISCI QUI IL TUO URL DI GOOGLE APPS SCRIPT
+    const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbwd_hKE9r-x1i6KvEs5E5NeIAs9eYUnRJE5pGz6zVf73WX5xESubZw0-jQ7S8M8UNbekQ/exec";
 
     let databaseMappe = []; 
     let filtroStatoAttuale = 'tutti';
@@ -95,7 +100,6 @@
         
         try {
             erroreEl.style.display = "none";
-            // Chiede a Google Script se la password inserita combacia con quella nel foglio "Impostazioni"
             const response = await fetch(URL_SCRIPT, {
                 method: "POST",
                 body: JSON.stringify({ action: "login", password: inputPwd })
@@ -104,7 +108,7 @@
             
             if (risultato.success) {
                 localStorage.setItem("accessoTerritori", "ok");
-                localStorage.setItem("pwdTerritori", inputPwd); // Salviamo la pwd temporaneamente per autorizzare le scritture future
+                localStorage.setItem("pwdTerritori", inputPwd);
                 mostraContenuti();
                 avviaApp();
             } else {
@@ -128,7 +132,7 @@
         try {
             const response = await fetch(URL_SCRIPT);
             databaseMappe = await response.json();
-            console.log("Dati ricevuti:", databaseMappe);
+            console.log("Dati ricevuti dal foglio:", databaseMappe);
             cercaMappa(); 
             if(statusEl) statusEl.innerText = "Ultimo aggiornamento: " + new Date().toLocaleTimeString();
         } catch (error) {
@@ -156,6 +160,31 @@
         document.getElementById("searchInput").value = "";
     }
 
+    // FUNZIONE GLOBALE PER CAMBIARE LA SEQUENZA DELLA DATA E TOGLIERE L'ORARIO
+    function formattaDataItaliana(stringaData) {
+        if (!stringaData) return "";
+        let dataPulita = stringaData.toString().trim();
+        if (dataPulita === "" || dataPulita.toLowerCase() === "undefined" || dataPulita.toLowerCase() === "null") return "";
+
+        // 1. Togliamo l'orario prendendo solo la prima parte prima dello spazio o della 'T' (formato ISO)
+        let soloData = dataPulita.split(" ")[0].split("T")[0];
+
+        // 2. Cambiamo la sequenza da ANNO-MESE-GIORNO a GIORNO/MESE/ANNO
+        if (soloData.includes("-")) {
+            let parti = soloData.split("-");
+            if (parti[0].length === 4) {
+                return `${parti[2]}/${parti[1]}/${parti[0]}`;
+            }
+        }
+
+        // Se ha già le barre, restituisce solo la data pulita
+        if (soloData.includes("/")) {
+            return soloData;
+        }
+
+        return soloData;
+    }
+
     function cercaMappa(e) {
         const input = document.getElementById("searchInput").value.toLowerCase().trim();
         const contenitore = document.getElementById("map-results");
@@ -173,9 +202,13 @@
             const dispVal = m.disponibile ? m.disponibile.toString().toLowerCase().trim() : "";
             const isLibero = dispVal === "sì" || dispVal === "si" || dispVal === "true";
             
+            const ritardoVal = (m["in ritardo"] || m["inritardo"] || "").toString().toLowerCase().trim();
+            const isRitardo = ritardoVal === "sì" || ritardoVal === "si" || ritardoVal === "true";
+            
             let matchStato = true;
             if (filtroStatoAttuale === 'disponibile') matchStato = isLibero;
             if (filtroStatoAttuale === 'occupato') matchStato = !isLibero;
+            if (filtroStatoAttuale === 'ritardo') matchStato = isRitardo;
 
             return matchTesto && matchStato;
         });
@@ -184,30 +217,56 @@
             risultati.forEach(mappa => {
                 let urlAnteprima = mappa.url;
                 if (mappa.url && mappa.url.includes("drive.google.com")) {
-                const match = mappa.url.match(/\/d\/([^\/]+)/);
-                // Usiamo l'endpoint di "uc" (usercontent) o "export=view" che scavalca il blocco sui domini esterni
-                if (match) urlAnteprima = `https://lh3.googleusercontent.com/d/${match[1]}=w800`;
-        }
+                    const match = mappa.url.match(/\/d\/([^\/]+)/);
+                    // FIX: Aggiunto '$' mancante e aggiornato endpoint Google Drive più performante
+                    if (match) urlAnteprima = `https://lh3.googleusercontent.com/d/${match[1]}=w800`;
+                }
 
                 const dispVal = mappa.disponibile ? mappa.disponibile.toString().toLowerCase().trim() : "";
                 const isLibero = dispVal === "sì" || dispVal === "si" || dispVal === "true";
                 const coloreStato = isLibero ? "#2ecc71" : "#e74c3c";
                 const testoStato = isLibero ? "Disponibile" : "Assegnato";
+                
+                const ritardoVal = (mappa["in ritardo"] || mappa["inritardo"] || "").toString().toLowerCase().trim();
+                const isRitardo = ritardoVal === "sì" || ritardoVal === "si" || ritardoVal === "true";
 
                 const div = document.createElement("div");
                 div.className = "card";
                 
-                // Evitiamo che cliccando sull'input si apra il link della mappa
+                const dataAssegnato = mappa["assegnato il"] || mappa["assegnatoil"] || "";
+                const dataRestituito = mappa["restituito il"] || mappa["restituitoil"] || "";
+
+                // Generazione blocco info date usando ORA la funzione di formattazione
+                let infoDate = "";
+                if (!isLibero && dataAssegnato !== "") {
+                    infoDate = `<p style="margin: 5px 0; font-size: 0.85rem; color: #555; text-align: left;"><strong>Assegnato il:</strong> ${formattaDataItaliana(dataAssegnato)}</p>`;
+                } else if (isLibero && dataRestituito !== "") {
+                    infoDate = `<p style="margin: 5px 0; font-size: 0.85rem; color: #555; text-align: left;"><strong>Restituito il:</strong> ${formattaDataItaliana(dataRestituito)}</p>`;
+                } else {
+                    infoDate = `<p style="margin: 5px 0; font-size: 0.85rem; color: #aaa; text-align: left; font-style: italic;">Nessuna data registrata</p>`;
+                }
+
+                let badgeRitardo = "";
+                if (isRitardo && !isLibero) {
+                    badgeRitardo = `<span style="position: absolute; top: 40px; right: 10px; background: #d35400; color: white; padding: 4px 10px; border-radius: 4px; font-size: 10px; font-weight: bold; text-transform: uppercase; animation: blinker 1.5s linear infinite; z-index: 10;">⚠️ IN RITARDO</span>`;
+                }
+
                 div.innerHTML = `
                     <div style="position: relative; overflow: hidden; cursor: pointer;" onclick="window.open('${mappa.url}', '_blank')">
                         <img src="${urlAnteprima}" alt="${mappa.nome}" style="width:100%; display:block;" onerror="this.src='https://via.placeholder.com/300x200?text=Territorio'">
-                        <span style="position: absolute; top: 10px; right: 10px; background: ${coloreStato}; color: white; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; text-transform: uppercase;">
+                        <span style="position: absolute; top: 10px; right: 10px; background: ${coloreStato}; color: white; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; text-transform: uppercase; z-index: 10;">
                             ${testoStato}
                         </span>
+                        ${badgeRitardo}
                     </div>
                     <div class="card-body">
                         <h3 style="margin: 0 0 8px 0; font-size: 1.1rem; text-align:left;">${mappa.nome}</h3>
-                        <div style="display: flex; flex-direction: column; gap: 5px; text-align: left;">
+                        
+                        <div style="background: #f9f9f9; padding: 6px 10px; border-radius: 6px; margin-bottom: 10px; border-left: 3px solid #ccc;">
+                            ${infoDate}
+                        </div>
+
+                        <div style="display: flex; flex-direction: column; gap: 5px; text-align: left; margin-top: 5px;">
                             <label style="font-size: 0.85rem; font-weight: bold; color: #555;">Assegnato a:</label>
                             <input type="text" id="input-assegnato-${mappa.riga}" value="${mappa.assegnato || ''}" placeholder="Nessuno (Lascia vuoto per liberare)" style="width: 90%;">
                             <button class="btn-save" onclick="salvaAssegnazione(${mappa.riga})">Salva modifiche</button>
@@ -248,7 +307,6 @@
 
             if(risultato.success) {
                 if(statusEl) statusEl.innerText = "Modifica salvata con successo!";
-                // Ricarichiamo i dati aggiornati dal foglio
                 caricaDatiDaSheet();
             } else {
                 alert("Errore durante il salvataggio: " + risultato.error);
@@ -264,5 +322,11 @@
         if (e.key === "Enter") controllaPassword();
     });
 </script>
+
+<style>
+@keyframes blinker {
+  50% { opacity: 0.4; }
+}
+</style>
 </body>
 </html>

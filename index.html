@@ -26,7 +26,7 @@
             <p>Inserisci la password per consultare i territori:</p>
             <input type="password" id="passwordInput" placeholder="Password">
             <button onclick="controllaPassword()">Entra</button>
-            <p id="errore" style="color: red; display: none;">Password errata!</p>
+            <p id="errore" style="color: red; display: none;">Password errata o errore di connessione!</p>
         </div>
     </div>
 
@@ -55,7 +55,6 @@
                 <button onclick="filtraRapido(event, 'Caramanico')">Caramanico</button>
                 <button onclick="filtraRapido(event, 'Eufemia')">Sant'Eufemia</button>
             </section>
-            </section>
 
             <section class="filter-buttons" style="border-top: 1px solid #eee; padding-top: 10px;">
                 <button onclick="filtraStato(event, 'tutti')" class="status-btn active">Mostra Tutti</button>
@@ -71,13 +70,15 @@
     </main>
 
 <script>
+    // METTI QUI IL TUO NUOVO URL DI GOOGLE APPS SCRIPT GENERATO DOPO LA NUOVA DISTRIBUZIONE
+    const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbwlKlpj5OS3V4Pueko6A-XZV-lwc2ToWO_9fflJDGEPMedDrNyxTZ-_YN17hu3q7G_oCw/exec";
+
     let databaseMappe = []; 
     let filtroStatoAttuale = 'tutti';
     let autoRefreshInterval;
 
-    // Controllo accesso
     window.onload = function() {
-        if (localStorage.getItem("accessoTerritori") === "ok") {
+        if (localStorage.getItem("accessoTerritori") === "ok" && localStorage.getItem("pwdTerritori")) {
             mostraContenuti();
             avviaApp();
         }
@@ -88,15 +89,31 @@
         document.getElementById("controls-section").style.display = "block";
     }
 
-    function controllaPassword() {
-        const passwordCorretta = "Rocca2026"; 
-        const input = document.getElementById("passwordInput").value;
-        if (input === passwordCorretta) {
-            localStorage.setItem("accessoTerritori", "ok");
-            mostraContenuti();
-            avviaApp();
-        } else {
-            document.getElementById("errore").style.display = "block";
+    async function controllaPassword() {
+        const inputPwd = document.getElementById("passwordInput").value;
+        const erroreEl = document.getElementById("errore");
+        
+        try {
+            erroreEl.style.display = "none";
+            // Chiede a Google Script se la password inserita combacia con quella nel foglio "Impostazioni"
+            const response = await fetch(URL_SCRIPT, {
+                method: "POST",
+                body: JSON.stringify({ action: "login", password: inputPwd })
+            });
+            const risultato = await response.json();
+            
+            if (risultato.success) {
+                localStorage.setItem("accessoTerritori", "ok");
+                localStorage.setItem("pwdTerritori", inputPwd); // Salviamo la pwd temporaneamente per autorizzare le scritture future
+                mostraContenuti();
+                avviaApp();
+            } else {
+                erroreEl.innerText = "Password errata!";
+                erroreEl.style.display = "block";
+            }
+        } catch (error) {
+            erroreEl.innerText = "Errore di connessione al server.";
+            erroreEl.style.display = "block";
         }
     }
 
@@ -107,16 +124,15 @@
     }
 
     async function caricaDatiDaSheet() {
-        const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbyCZFQgVEM6GIRTFW3lbMe-_qq_78eAL-B8QvAbSI4zMe1WrzKn2f-YaMLnY-ZiOL4/exec";
         const statusEl = document.getElementById("refresh-status");
         try {
             const response = await fetch(URL_SCRIPT);
             databaseMappe = await response.json();
-            console.log("Dati ricevuti:", databaseMappe); // Per controllo in console
+            console.log("Dati ricevuti:", databaseMappe);
             cercaMappa(); 
             if(statusEl) statusEl.innerText = "Ultimo aggiornamento: " + new Date().toLocaleTimeString();
         } catch (error) {
-            if(statusEl) statusEl.innerText = "Errore di connessione";
+            if(statusEl) statusEl.innerText = "Errore di connessione nel caricamento";
         }
     }
 
@@ -153,7 +169,7 @@
         }
 
         const risultati = databaseMappe.filter(m => {
-            const matchTesto = m.nome.toLowerCase().includes(input);
+            const matchTesto = m.nome ? m.nome.toLowerCase().includes(input) : false;
             const dispVal = m.disponibile ? m.disponibile.toString().toLowerCase().trim() : "";
             const isLibero = dispVal === "sì" || dispVal === "si" || dispVal === "true";
             
@@ -168,9 +184,10 @@
             risultati.forEach(mappa => {
                 let urlAnteprima = mappa.url;
                 if (mappa.url && mappa.url.includes("drive.google.com")) {
-                    const match = mappa.url.match(/\/d\/([^\/]+)/);
-                    if (match) urlAnteprima = `https://drive.google.com/thumbnail?id=${match[1]}&sz=w800`;
-                }
+                const match = mappa.url.match(/\/d\/([^\/]+)/);
+                // Usiamo l'endpoint di "uc" (usercontent) o "export=view" che scavalca il blocco sui domini esterni
+                if (match) urlAnteprima = `https://lh3.googleusercontent.com/d/${match[1]}=w800`;
+        }
 
                 const dispVal = mappa.disponibile ? mappa.disponibile.toString().toLowerCase().trim() : "";
                 const isLibero = dispVal === "sì" || dispVal === "si" || dispVal === "true";
@@ -179,26 +196,67 @@
 
                 const div = document.createElement("div");
                 div.className = "card";
-                div.style.cursor = "pointer";
+                
+                // Evitiamo che cliccando sull'input si apra il link della mappa
                 div.innerHTML = `
-                    <div style="position: relative; overflow: hidden;">
+                    <div style="position: relative; overflow: hidden; cursor: pointer;" onclick="window.open('${mappa.url}', '_blank')">
                         <img src="${urlAnteprima}" alt="${mappa.nome}" style="width:100%; display:block;" onerror="this.src='https://via.placeholder.com/300x200?text=Territorio'">
                         <span style="position: absolute; top: 10px; right: 10px; background: ${coloreStato}; color: white; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; text-transform: uppercase;">
                             ${testoStato}
                         </span>
                     </div>
-                    <div style="padding: 15px;">
-                        <h3 style="margin: 0 0 8px 0; font-size: 1.1rem;">${mappa.nome}</h3>
-                        <p style="margin: 0; font-size: 0.9rem; color: #555;">
-                            <strong>Assegnato a:</strong> ${mappa.assegnato || '<i>Nessuno</i>'}
-                        </p>
+                    <div class="card-body">
+                        <h3 style="margin: 0 0 8px 0; font-size: 1.1rem; text-align:left;">${mappa.nome}</h3>
+                        <div style="display: flex; flex-direction: column; gap: 5px; text-align: left;">
+                            <label style="font-size: 0.85rem; font-weight: bold; color: #555;">Assegnato a:</label>
+                            <input type="text" id="input-assegnato-${mappa.riga}" value="${mappa.assegnato || ''}" placeholder="Nessuno (Lascia vuoto per liberare)" style="width: 90%;">
+                            <button class="btn-save" onclick="salvaAssegnazione(${mappa.riga})">Salva modifiche</button>
+                        </div>
                     </div>
                 `;
-                div.onclick = () => window.open(mappa.url, "_blank");
                 contenitore.appendChild(div);
             });
         } else {
             contenitore.innerHTML = "<p style='padding:20px;'>Nessun territorio trovato.</p>";
+        }
+    }
+
+    async function salvaAssegnazione(riga) {
+        const nuovoAssegnato = document.getElementById(`input-assegnato-${riga}`).value;
+        const passwordSalvata = localStorage.getItem("pwdTerritori");
+        const statusEl = document.getElementById("refresh-status");
+
+        if(!passwordSalvata) {
+            alert("Sessione scaduta o non valida. Effettua nuovamente il login.");
+            location.reload();
+            return;
+        }
+
+        if(statusEl) statusEl.innerText = "Salvataggio in corso...";
+
+        try {
+            const response = await fetch(URL_SCRIPT, {
+                method: "POST",
+                body: JSON.stringify({
+                    action: "salva",
+                    password: passwordSalvata,
+                    riga: riga,
+                    assegnato: nuovoAssegnato
+                })
+            });
+            const risultato = await response.json();
+
+            if(risultato.success) {
+                if(statusEl) statusEl.innerText = "Modifica salvata con successo!";
+                // Ricarichiamo i dati aggiornati dal foglio
+                caricaDatiDaSheet();
+            } else {
+                alert("Errore durante il salvataggio: " + risultato.error);
+                if(statusEl) statusEl.innerText = "Errore di salvataggio";
+            }
+        } catch (error) {
+            alert("Errore di rete durante il salvataggio.");
+            if(statusEl) statusEl.innerText = "Errore di connessione";
         }
     }
 

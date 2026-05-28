@@ -146,9 +146,9 @@ button {
 }
 
 .card:hover {
-    transform: scale(1.05); /* La card si ingrandisce leggermente */
-    box-shadow: 0 8px 12px rgba(241, 238, 238, 0); /* L'ombra diventa più scura */
-    background-color: hwb(221 46% 28%);
+    transform: scale(1.02); /* Ingrandimento leggermente minore per non disturbare la scrittura */
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15); /* Ombra reale scura e visibile */
+    background-color: #ffffff; /* Mantiene lo sfondo bianco pulito */
 }
 /* Layout della Card */
 .card {

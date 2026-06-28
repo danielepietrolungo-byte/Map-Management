@@ -8,6 +8,29 @@
     <link rel="stylesheet" href="manifest.json">
     <meta name="theme-color" content="#2c3e50">
 
+    <style>
+        /* Modifiche per ottimizzare lo spazio */
+        .status-btn {
+            padding: 4px 8px !important;
+            font-size: 11px !important;
+            margin: 2px !important;
+        }
+        
+        .filter-buttons {
+            margin-bottom: 5px !important;
+            padding-top: 5px !important;
+        }
+
+        .search-section {
+            gap: 5px !important;
+            margin-bottom: 5px !important;
+        }
+
+        #controls-section {
+            padding: 5px 0 !important;
+        }
+    </style>
+
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
@@ -35,16 +58,16 @@
         <div id="refresh-status" style="font-size: 10px; color: #aaa; margin-top: 5px;">Accesso richiesto</div>
     </header>
 
-    <div id="controls-section" style="display: none; position: sticky; top: 0; z-index: 1000; background: white; box-shadow: 0 4px 10px rgba(0,0,0,0.1); padding: 10px 0;">
+    <div id="controls-section" style="display: none; position: sticky; top: 0; z-index: 1000; background: white; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
         <main class="container" style="margin-top: 0; margin-bottom: 0;">
-            <section class="search-section" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; border: none;">
+            <section class="search-section" style="display: flex; flex-wrap: wrap; border: none;">
                 <input type="text" id="searchInput" placeholder="Cerca un territorio..." oninput="cercaMappa(event)" onfocus="resetCampo()" style="flex: 1; min-width: 200px;">
                 <button onclick="cercaMappa()">Cerca</button>
                 <button onclick="caricaDatiDaSheet()" title="Aggiorna ora" style="background-color: #6c757d; color: white;">🔄</button>
             </section>
 
-            <section class="filter-buttons" style="margin-bottom: 10px;">
-                <select id="selectTerritorio" onchange="filtraDaTendina(event)" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
+            <section class="filter-buttons">
+                <select id="selectTerritorio" onchange="filtraDaTendina(event)" style="width: 100%; padding: 4px; border-radius: 4px; border: 1px solid #ccc;">
                     <option value="">Tutti i territori</option>
                     <option value="Bolognano">Bolognano</option>
                     <option value="Musellaro">Musellaro</option>
@@ -62,11 +85,11 @@
                 </select>
             </section>
 
-            <section class="filter-buttons" style="border-top: 1px solid #eee; padding-top: 10px;">
-                <button onclick="filtraStato(event, 'tutti')" class="status-btn active">Mostra Tutti</button>
-                <button onclick="filtraStato(event, 'disponibile')" class="status-btn">Solo Disponibili</button>
-                <button onclick="filtraStato(event, 'occupato')" class="status-btn">Solo Assegnati</button>
-                <button onclick="filtraStato(event, 'ritardo')" class="status-btn" style="border: 1px solid #e74c3c; color: #e74c3c;">⚠️ In Ritardo</button>
+            <section class="filter-buttons" style="border-top: 1px solid #eee;">
+                <button onclick="filtraStato(event, 'tutti')" class="status-btn active">Tutti</button>
+                <button onclick="filtraStato(event, 'disponibile')" class="status-btn">Disponibili</button>
+                <button onclick="filtraStato(event, 'occupato')" class="status-btn">Assegnati</button>
+                <button onclick="filtraStato(event, 'ritardo')" class="status-btn" style="border: 1px solid #e74c3c; color: #e74c3c;">⚠️ Ritardo</button>
             </section>
         </main>
     </div>

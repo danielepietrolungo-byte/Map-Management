@@ -18,6 +18,34 @@
         .filter-buttons { margin-bottom: 5px !important; padding-top: 5px !important; }
         .search-section { gap: 5px !important; margin-bottom: 5px !important; }
         #controls-section { position: sticky; top: 0; z-index: 1000; background: white; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+
+        /* Banner di notifica WhatsApp per Mobile */
+        #wa-banner {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #25D366;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            z-index: 2000;
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
+        }
+        #wa-banner button {
+            background: white;
+            color: #25D366;
+            border: none;
+            padding: 8px 15px;
+            margin-top: 8px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+        }
     </style>
 
 <script>
@@ -108,11 +136,19 @@
         <section id="map-results" class="results-grid"></section>
     </main>
 
-<<script>
+    <!-- Banner per la notifica WhatsApp -->
+    <div id="wa-banner">
+        <div><strong>Salvato con successo!</strong></div>
+        <button id="wa-btn" onclick="apriWhatsApp()">📲 Invia Notifica su WhatsApp</button>
+        <div style="font-size: 11px; margin-top: 5px; cursor: pointer; text-decoration: underline;" onclick="chiudiBannerWA()">Chiudi</div>
+    </div>
+
+<script>
     const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbwd_hKE9r-x1i6KvEs5E5NeIAs9eYUnRJE5pGz6zVf73WX5xESubZw0-jQ7S8M8UNbekQ/exec";
     let databaseMappe = []; 
     let filtroStatoAttuale = 'tutti';
     let autoRefreshInterval;
+    let urlWhatsAppCorrente = "";
 
     window.onload = function() {
         if (localStorage.getItem("accessoTerritori") === "ok" && localStorage.getItem("pwdTerritori")) {
@@ -256,14 +292,19 @@
             if (res.success) { 
                 caricaDatiDaSheet();
 
-                // Se è presente un nome, si richiede l'apertura immediata per bypassare il blocco dei popup su mobile
                 if (nuovoAssegnato.trim() !== "") {
-                    const inviaWA = confirm("Salvato con successo!\n\nVuoi inviare la notifica su WhatsApp?");
-                    if (inviaWA) {
-                        const testo = `📌 *Territorio Assegnato*\n🗺️ *Territorio:* ${nomeMappa}\n👤 *Assegnato a:* ${nuovoAssegnato}`;
-                        const urlWhatsApp = `https://api.whatsapp.com/send?text=${encodeURIComponent(testo)}`;
-                        window.location.href = urlWhatsApp;
+                    const testo = `📌 *Territorio Assegnato*\n🗺️ *Territorio:* ${nomeMappa}\n👤 *Assegnato a:* ${nuovoAssegnato}`;
+                    
+                    // Rilevamento dispositivo mobile per lo schema WhatsApp corretto
+                    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+                    if (isMobile) {
+                        urlWhatsAppCorrente = `whatsapp://send?text=${encodeURIComponent(testo)}`;
+                    } else {
+                        urlWhatsAppCorrente = `https://web.whatsapp.com/send?text=${encodeURIComponent(testo)}`;
                     }
+
+                    // Mostra il banner di condivisione
+                    document.getElementById("wa-banner").style.display = "block";
                 } else {
                     alert("Salvato con successo!");
                 }
@@ -273,6 +314,17 @@
         } catch (error) {
             alert("Errore di connessione.");
         }
+    }
+
+    function apriWhatsApp() {
+        if (urlWhatsAppCorrente) {
+            window.location.href = urlWhatsAppCorrente;
+            chiudiBannerWA();
+        }
+    }
+
+    function chiudiBannerWA() {
+        document.getElementById("wa-banner").style.display = "none";
     }
 </script>
 </body>

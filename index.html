@@ -11,13 +11,154 @@
     <style>
         /* Stili per la tendina a scomparsa */
         #pannello-filtri { display: none; padding: 10px; background: #f9f9f9; border-bottom: 1px solid #ddd; }
-        .toggle-btn { width: 100%; padding: 10px; background: #2c3e50; color: white; border: none; cursor: pointer; text-align: center; font-weight: bold; }
+        .toggle-btn { width: 100%; padding: 12px; background: #2c3e50; color: white; border: none; cursor: pointer; text-align: center; font-weight: bold; border-radius: 6px; }
         
         /* Stili compatti */
-        .status-btn { padding: 4px 8px !important; font-size: 11px !important; margin: 2px !important; }
-        .filter-buttons { margin-bottom: 5px !important; padding-top: 5px !important; }
-        .search-section { gap: 5px !important; margin-bottom: 5px !important; }
-        #controls-section { position: sticky; top: 0; z-index: 1000; background: white; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .status-btn { padding: 6px 12px !important; font-size: 12px !important; margin: 2px !important; border-radius: 20px !important; border: 1px solid #ccc; background: white; cursor: pointer; }
+        .status-btn.active { background: #2c3e50; color: white; border-color: #2c3e50; }
+        .filter-buttons { margin-bottom: 8px !important; padding-top: 5px !important; }
+        .search-section { gap: 8px !important; margin-bottom: 8px !important; }
+        #controls-section { position: sticky; top: 0; z-index: 1000; background: white; box-shadow: 0 4px 10px rgba(0,0,0,0.08); padding: 8px; }
+
+        /* Design Cards Migliorato */
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            padding: 10px;
+        }
+
+        .card {
+            background: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #eee;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+        }
+
+        .card-img-container {
+            position: relative;
+            width: 100%;
+            height: 180px;
+            overflow: hidden;
+            background: #e9ecef;
+            cursor: pointer;
+        }
+
+        .card-img-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .card-img-container:hover img {
+            transform: scale(1.05);
+        }
+
+        /* Badge sovrapposti all'immagine */
+        .badge-status {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            color: white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            backdrop-filter: blur(4px);
+        }
+
+        .badge-campagna {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(230, 126, 34, 0.9);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            cursor: pointer;
+            backdrop-filter: blur(4px);
+            user-select: none;
+            transition: background 0.2s;
+        }
+
+        .badge-campagna:hover {
+            background: rgba(211, 84, 0, 1);
+        }
+
+        .badge-campagna input[type="checkbox"] {
+            cursor: pointer;
+            width: 14px;
+            height: 14px;
+            accent-color: #d35400;
+        }
+
+        .card-body {
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex-grow: 1;
+        }
+
+        .card-body h3 {
+            margin: 0;
+            font-size: 16px;
+            color: #2c3e50;
+        }
+
+        .card-body p {
+            margin: 0;
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+
+        .input-assegnato {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #cccccc;
+            border-radius: 6px;
+            font-size: 13px;
+            box-sizing: border-box;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .input-assegnato:focus {
+            border-color: #3498db;
+        }
+
+        .btn-salva {
+            width: 100%;
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 9px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-salva:hover {
+            background: #219150;
+        }
 
         /* Banner di notifica WhatsApp per Mobile */
         #wa-banner {
@@ -29,8 +170,8 @@
             background: #25D366;
             color: white;
             padding: 15px 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.25);
             z-index: 2000;
             text-align: center;
             width: 90%;
@@ -40,11 +181,12 @@
             background: white;
             color: #25D366;
             border: none;
-            padding: 8px 15px;
-            margin-top: 8px;
+            padding: 10px 18px;
+            margin-top: 10px;
             font-weight: bold;
-            border-radius: 4px;
+            border-radius: 6px;
             cursor: pointer;
+            width: 100%;
         }
     </style>
 
@@ -54,7 +196,6 @@
         const isOpening = panel.style.display !== "block";
         panel.style.display = isOpening ? "block" : "none";
         
-        // Reset automatico quando si chiude la tendina
         if (!isOpening) {
             resettaTutto();
         }
@@ -98,13 +239,13 @@
         <div id="pannello-filtri">
             <main class="container">
                 <section class="search-section" style="display: flex; flex-wrap: wrap;">
-                    <input type="text" id="searchInput" placeholder="Cerca un territorio..." oninput="cercaMappa()" onfocus="resetCampo()" style="flex: 1; min-width: 200px;">
-                    <button onclick="cercaMappa()">Cerca</button>
-                    <button onclick="caricaDatiDaSheet()" title="Aggiorna ora" style="background-color: #6c757d; color: white;">🔄</button>
+                    <input type="text" id="searchInput" placeholder="Cerca un territorio..." oninput="cercaMappa()" onfocus="resetCampo()" style="flex: 1; min-width: 200px; padding: 8px; border-radius: 6px; border: 1px solid #ccc;">
+                    <button onclick="cercaMappa()" style="padding: 8px 15px; border-radius: 6px; border: none; background: #2c3e50; color: white; cursor: pointer;">Cerca</button>
+                    <button onclick="caricaDatiDaSheet()" title="Aggiorna ora" style="background-color: #6c757d; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer;">🔄</button>
                 </section>
 
                 <section class="filter-buttons">
-                    <select id="selectTerritorio" onchange="filtraDaTendina(event)" style="width: 100%; padding: 4px; border-radius: 4px; border: 1px solid #ccc;">
+                    <select id="selectTerritorio" onchange="filtraDaTendina(event)" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #ccc;">
                         <option value="">Tutti i territori</option>
                         <option value="Bolognano">Bolognano</option>
                         <option value="Musellaro">Musellaro</option>
@@ -122,7 +263,7 @@
                     </select>
                 </section>
 
-                <section class="filter-buttons" style="border-top: 1px solid #eee;">
+                <section class="filter-buttons" style="border-top: 1px solid #eee; padding-top: 8px;">
                     <button onclick="filtraStato(event, 'tutti')" class="status-btn active">Tutti</button>
                     <button onclick="filtraStato(event, 'disponibile')" class="status-btn">Disponibili</button>
                     <button onclick="filtraStato(event, 'occupato')" class="status-btn">Assegnati</button>
@@ -140,7 +281,7 @@
     <div id="wa-banner">
         <div><strong>Salvato con successo!</strong></div>
         <button id="wa-btn" onclick="apriWhatsApp()">📲 Invia Notifica su WhatsApp</button>
-        <div style="font-size: 11px; margin-top: 5px; cursor: pointer; text-decoration: underline;" onclick="chiudiBannerWA()">Chiudi</div>
+        <div style="font-size: 11px; margin-top: 8px; cursor: pointer; text-decoration: underline;" onclick="chiudiBannerWA()">Chiudi</div>
     </div>
 
 <script>
@@ -249,23 +390,35 @@
             if (match) urlAnteprima = `https://lh3.googleusercontent.com/d/${match[1]}=w800`;
 
             const isLibero = ["sì", "si", "true"].includes((mappa.disponibile || "").toString().toLowerCase());
+            const isCampagna = ["sì", "si", "true"].includes((mappa.campagna || "").toString().toLowerCase());
             
             const nomePulito = (mappa.nome || '').replace(/'/g, "\\'");
 
             const div = document.createElement("div");
             div.className = "card";
             div.innerHTML = `
-                <div style="position: relative; overflow: hidden; cursor: pointer;" onclick="window.open('${mappa.url}', '_blank')">
-                    <img src="${urlAnteprima}" style="width:100%; display:block;" onerror="this.src='https://via.placeholder.com/300x200?text=Territorio'">
-                    <span style="position: absolute; top: 10px; right: 10px; background: ${isLibero ? "#2ecc71" : "#e74c3c"}; color: white; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold;">
+                <div class="card-img-container">
+                    <img src="${urlAnteprima}" onclick="window.open('${mappa.url}', '_blank')" onerror="this.src='https://via.placeholder.com/300x200?text=Territorio'">
+                    
+                    <!-- Flag Campagna in alto a sinistra dell'immagine -->
+                    <label class="badge-campagna" onclick="event.stopPropagation();">
+                        <input type="checkbox" id="input-campagna-${mappa.riga}" ${isCampagna ? 'checked' : ''}>
+                        <span>Campagna 🚀</span>
+                    </label>
+
+                    <!-- Badge Stato in alto a destra dell'immagine -->
+                    <span class="badge-status" style="background: ${isLibero ? 'rgba(46, 204, 113, 0.9)' : 'rgba(231, 76, 60, 0.9)'};">
                         ${isLibero ? "Disponibile" : "Assegnato"}
                     </span>
                 </div>
+
                 <div class="card-body">
                     <h3>${mappa.nome || ''}</h3>
                     <p><strong>${isLibero ? "Restituito il:" : "Assegnato il:"}</strong> ${formattaDataItaliana(isLibero ? mappa["restituito il"] : mappa["assegnato il"])}</p>
-                    <input type="text" id="input-assegnato-${mappa.riga}" value="${mappa.assegnato || ''}">
-                    <button onclick="salvaAssegnazione(${mappa.riga}, '${nomePulito}')">Salva</button>
+                    
+                    <input type="text" class="input-assegnato" id="input-assegnato-${mappa.riga}" value="${mappa.assegnato || ''}" placeholder="Nome del proclamatore...">
+
+                    <button class="btn-salva" onclick="salvaAssegnazione(${mappa.riga}, '${nomePulito}')">Salva</button>
                 </div>
             `;
             contenitore.appendChild(div);
@@ -274,6 +427,7 @@
 
     async function salvaAssegnazione(riga, nomeMappa) {
         const nuovoAssegnato = document.getElementById(`input-assegnato-${riga}`).value;
+        const isCampagna = document.getElementById(`input-campagna-${riga}`).checked;
         const password = localStorage.getItem("pwdTerritori");
 
         try {
@@ -283,7 +437,8 @@
                     action: "salva", 
                     password: password, 
                     riga: riga, 
-                    assegnato: nuovoAssegnato 
+                    assegnato: nuovoAssegnato,
+                    campagna: isCampagna
                 }) 
             });
 
@@ -293,11 +448,12 @@
                 caricaDatiDaSheet();
 
                 if (nuovoAssegnato.trim() !== "") {
-                    const testo = `📌 *Territorio Assegnato*\n🗺️ *Territorio:* ${nomeMappa}\n👤 *Assegnato a:* ${nuovoAssegnato}`;
+                    let testo = `📌 *Territorio Assegnato*\n🗺️ *Territorio:* ${nomeMappa}\n👤 *Assegnato a:* ${nuovoAssegnato}`;
+                    if (isCampagna) {
+                        testo += `\n🚀 *In Campagna:* Sì`;
+                    }
                     
-                    // URL universale compatibile con mobile e desktop
                     urlWhatsAppCorrente = `https://api.whatsapp.com/send?text=${encodeURIComponent(testo)}`;
-
                     document.getElementById("wa-banner").style.display = "block";
                 } else {
                     alert("Salvato con successo!");

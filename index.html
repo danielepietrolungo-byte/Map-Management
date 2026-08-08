@@ -295,7 +295,6 @@
                 if (nuovoAssegnato.trim() !== "") {
                     const testo = `📌 *Territorio Assegnato*\n🗺️ *Territorio:* ${nomeMappa}\n👤 *Assegnato a:* ${nuovoAssegnato}`;
                     
-                    // Rilevamento dispositivo mobile per lo schema WhatsApp corretto
                     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
                     if (isMobile) {
                         urlWhatsAppCorrente = `whatsapp://send?text=${encodeURIComponent(testo)}`;
@@ -303,7 +302,6 @@
                         urlWhatsAppCorrente = `https://web.whatsapp.com/send?text=${encodeURIComponent(testo)}`;
                     }
 
-                    // Mostra il banner di condivisione
                     document.getElementById("wa-banner").style.display = "block";
                 } else {
                     alert("Salvato con successo!");

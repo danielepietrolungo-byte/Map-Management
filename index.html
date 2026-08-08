@@ -108,7 +108,7 @@
         <section id="map-results" class="results-grid"></section>
     </main>
 
-<script>
+<<script>
     const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbwd_hKE9r-x1i6KvEs5E5NeIAs9eYUnRJE5pGz6zVf73WX5xESubZw0-jQ7S8M8UNbekQ/exec";
     let databaseMappe = []; 
     let filtroStatoAttuale = 'tutti';
@@ -236,43 +236,44 @@
         });
     }
 
-  async function salvaAssegnazione(riga, nomeMappa) {
-    const nuovoAssegnato = document.getElementById(`input-assegnato-${riga}`).value;
-    const password = localStorage.getItem("pwdTerritori");
+    async function salvaAssegnazione(riga, nomeMappa) {
+        const nuovoAssegnato = document.getElementById(`input-assegnato-${riga}`).value;
+        const password = localStorage.getItem("pwdTerritori");
 
-    try {
-        const response = await fetch(URL_SCRIPT, { 
-            method: "POST", 
-            body: JSON.stringify({ 
-                action: "salva", 
-                password: password, 
-                riga: riga, 
-                assegnato: nuovoAssegnato 
-            }) 
-        });
+        try {
+            const response = await fetch(URL_SCRIPT, { 
+                method: "POST", 
+                body: JSON.stringify({ 
+                    action: "salva", 
+                    password: password, 
+                    riga: riga, 
+                    assegnato: nuovoAssegnato 
+                }) 
+            });
 
-        const res = await response.json();
+            const res = await response.json();
 
-        if (res.success) { 
-            alert("Salvato con successo!");
+            if (res.success) { 
+                caricaDatiDaSheet();
 
-            // Reindirizzamento compatibile sia con Mobile che con Desktop
-            if (nuovoAssegnato.trim() !== "") {
-                const testo = `📌 *Territorio Assegnato*\n🗺️ *Territorio:* ${nomeMappa}\n👤 *Assegnato a:* ${nuovoAssegnato}`;
-                const urlWhatsApp = `https://wa.me/?text=${encodeURIComponent(testo)}`;
-                
-                // Su mobile wa.me reindirizza direttamente all'app WhatsApp
-                window.location.href = urlWhatsApp;
+                // Se è presente un nome, si richiede l'apertura immediata per bypassare il blocco dei popup su mobile
+                if (nuovoAssegnato.trim() !== "") {
+                    const inviaWA = confirm("Salvato con successo!\n\nVuoi inviare la notifica su WhatsApp?");
+                    if (inviaWA) {
+                        const testo = `📌 *Territorio Assegnato*\n🗺️ *Territorio:* ${nomeMappa}\n👤 *Assegnato a:* ${nuovoAssegnato}`;
+                        const urlWhatsApp = `https://api.whatsapp.com/send?text=${encodeURIComponent(testo)}`;
+                        window.location.href = urlWhatsApp;
+                    }
+                } else {
+                    alert("Salvato con successo!");
+                }
+            } else { 
+                alert("Errore durante il salvataggio."); 
             }
-
-            caricaDatiDaSheet(); 
-        } else { 
-            alert("Errore durante il salvataggio."); 
+        } catch (error) {
+            alert("Errore di connessione.");
         }
-    } catch (error) {
-        alert("Errore di connessione.");
     }
-}
 </script>
 </body>
 </html>

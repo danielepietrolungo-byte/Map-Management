@@ -295,12 +295,8 @@
                 if (nuovoAssegnato.trim() !== "") {
                     const testo = `📌 *Territorio Assegnato*\n🗺️ *Territorio:* ${nomeMappa}\n👤 *Assegnato a:* ${nuovoAssegnato}`;
                     
-                    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-                    if (isMobile) {
-                        urlWhatsAppCorrente = `whatsapp://send?text=${encodeURIComponent(testo)}`;
-                    } else {
-                        urlWhatsAppCorrente = `https://web.whatsapp.com/send?text=${encodeURIComponent(testo)}`;
-                    }
+                    // URL universale compatibile con mobile e desktop
+                    urlWhatsAppCorrente = `https://api.whatsapp.com/send?text=${encodeURIComponent(testo)}`;
 
                     document.getElementById("wa-banner").style.display = "block";
                 } else {
@@ -316,7 +312,7 @@
 
     function apriWhatsApp() {
         if (urlWhatsAppCorrente) {
-            window.location.href = urlWhatsAppCorrente;
+            window.open(urlWhatsAppCorrente, '_blank');
             chiudiBannerWA();
         }
     }

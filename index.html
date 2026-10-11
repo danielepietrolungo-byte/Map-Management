@@ -1,481 +1,831 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="it" class="h-full">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestione Territori</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#2c3e50">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gestione Territori Roccamorice</title>
+    
+    <!-- PWA Primary Meta Tags -->
+    <meta name="theme-color" content="#1e293b">
+    <meta name="description" content="App per la gestione dei territori di predicazione a Roccamorice e zone limitrofe.">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Territori">
+    
+    <!-- Dynamic Manifest -->
+    <link rel="manifest" id="manifest-placeholder">
 
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
     <style>
-        /* Stili per la tendina a scomparsa */
-        #pannello-filtri { display: none; padding: 10px; background: #f9f9f9; border-bottom: 1px solid #ddd; }
-        .toggle-btn { width: 100%; padding: 12px; background: #2c3e50; color: white; border: none; cursor: pointer; text-align: center; font-weight: bold; border-radius: 6px; }
-        
-        /* Stili compatti */
-        .status-btn { padding: 6px 12px !important; font-size: 12px !important; margin: 2px !important; border-radius: 20px !important; border: 1px solid #ccc; background: white; cursor: pointer; }
-        .status-btn.active { background: #2c3e50; color: white; border-color: #2c3e50; }
-        .filter-buttons { margin-bottom: 8px !important; padding-top: 5px !important; }
-        .search-section { gap: 8px !important; margin-bottom: 8px !important; }
-        #controls-section { position: sticky; top: 0; z-index: 1000; background: white; box-shadow: 0 4px 10px rgba(0,0,0,0.08); padding: 8px; }
-
-        /* Design Cards Migliorato */
-        .results-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 20px;
-            padding: 10px;
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        .card {
-            background: #ffffff;
-            border-radius: 12px;
+        /* Collapsible accordion */
+        #pannello-filtri {
+            transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease;
+            max-height: 0;
+            opacity: 0;
             overflow: hidden;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-            display: flex;
-            flex-direction: column;
-            border: 1px solid #eee;
+        }
+        #pannello-filtri.open {
+            max-height: 600px;
+            opacity: 1;
         }
 
-        .card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+        /* Glassmorphism overlays */
+        .glass-overlay {
+            background: rgba(15, 23, 42, 0.82);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
         }
 
-        .card-img-container {
-            position: relative;
-            width: 100%;
-            height: 180px;
-            overflow: hidden;
-            background: #e9ecef;
-            cursor: pointer;
+        /* Custom scrollbar for desktop */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(100, 116, 139, 0.4);
+            border-radius: 9999px;
         }
 
-        .card-img-container img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.3s ease;
-        }
-
-        .card-img-container:hover img {
-            transform: scale(1.05);
-        }
-
-        /* Badge sovrapposti all'immagine */
-        .badge-status {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 700;
-            color: white;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-            backdrop-filter: blur(4px);
-        }
-
-        .badge-campagna {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background: rgba(230, 126, 34, 0.9);
-            color: white;
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-            cursor: pointer;
-            backdrop-filter: blur(4px);
-            user-select: none;
-            transition: background 0.2s;
-        }
-
-        .badge-campagna:hover {
-            background: rgba(211, 84, 0, 1);
-        }
-
-        .badge-campagna input[type="checkbox"] {
-            cursor: pointer;
-            width: 14px;
-            height: 14px;
-            accent-color: #d35400;
-        }
-
-        .card-body {
-            padding: 15px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            flex-grow: 1;
-        }
-
-        .card-body h3 {
-            margin: 0;
-            font-size: 16px;
-            color: #2c3e50;
-        }
-
-        .card-body p {
-            margin: 0;
-            font-size: 12px;
-            color: #7f8c8d;
-        }
-
-        .input-assegnato {
-            width: 100%;
-            padding: 8px 12px;
-            border: 1px solid #cccccc;
-            border-radius: 6px;
-            font-size: 13px;
-            box-sizing: border-box;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-
-        .input-assegnato:focus {
-            border-color: #3498db;
-        }
-
-        .btn-salva {
-            width: 100%;
-            background: #27ae60;
-            color: white;
-            border: none;
-            padding: 9px;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        .btn-salva:hover {
-            background: #219150;
-        }
-
-        /* Banner di notifica WhatsApp per Mobile */
-        #wa-banner {
-            display: none;
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #25D366;
-            color: white;
-            padding: 15px 20px;
-            border-radius: 12px;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.25);
-            z-index: 2000;
-            text-align: center;
-            width: 90%;
-            max-width: 400px;
-        }
-        #wa-banner button {
-            background: white;
-            color: #25D366;
-            border: none;
-            padding: 10px 18px;
-            margin-top: 10px;
-            font-weight: bold;
-            border-radius: 6px;
-            cursor: pointer;
-            width: 100%;
+        .badge-shadow {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
         }
     </style>
-
-<script>
-    function toggleFiltri() {
-        const panel = document.getElementById("pannello-filtri");
-        const isOpening = panel.style.display !== "block";
-        panel.style.display = isOpening ? "block" : "none";
-        
-        if (!isOpening) {
-            resettaTutto();
-        }
-    }
-
-    function resettaTutto() {
-        document.getElementById("searchInput").value = "";
-        document.getElementById("selectTerritorio").selectedIndex = 0;
-        filtraStato(null, 'tutti');
-        cercaMappa();
-    }
-
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('sw.js')
-                .then(reg => console.log('Service Worker registrato con successo!', reg))
-                .catch(err => console.log('Errore registrazione Service Worker:', err));
-        });
-    }
-</script>
 </head>
-<body>
 
-    <div id="login-overlay" style="display: flex;">
-        <div class="login-box">
-            <h2>Accesso Riservato</h2>
-            <p>Inserisci la password per consultare i territori:</p>
-            <input type="password" id="passwordInput" placeholder="Password">
-            <button onclick="controllaPassword()">Entra</button>
-            <p id="errore" style="color: red; display: none;">Password errata o errore di connessione!</p>
+<body class="h-full bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-100 flex flex-col antialiased transition-colors duration-200">
+
+    <script>
+        // Generate Web App Manifest dynamically
+        const manifestData = {
+            "name": "Gestione Territori Roccamorice",
+            "short_name": "Territori",
+            "start_url": "./",
+            "display": "standalone",
+            "background_color": "#0f172a",
+            "theme_color": "#1e293b",
+            "orientation": "portrait",
+            "icons": [
+                {
+                    "src": "https://img.icons8.com/color/512/map-marker--v1.png",
+                    "sizes": "512x512",
+                    "type": "image/png",
+                    "purpose": "any maskable"
+                }
+            ]
+        };
+        const stringManifest = JSON.stringify(manifestData);
+        const blobManifest = new Blob([stringManifest], {type: 'application/json'});
+        const manifestURL = URL.createObjectURL(blobManifest);
+        document.getElementById('manifest-placeholder').setAttribute('href', manifestURL);
+    </script>
+
+    <!-- Modal Login -->
+    <div id="login-overlay" class="fixed inset-0 z-50 flex items-center justify-center p-4 glass-overlay">
+        <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-slate-200 dark:border-slate-700 text-center transform transition-all">
+            <div class="w-20 h-20 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl shadow-inner border border-slate-200 dark:border-slate-600">
+                🗺️
+            </div>
+            <h2 class="text-2xl font-black text-slate-900 dark:text-white tracking-tight mb-2">Gestione Territori</h2>
+            <p class="text-slate-500 dark:text-slate-400 text-sm mb-6">Inserisci la password per accedere al registro territori.</p>
+
+            <form onsubmit="handleLoginSubmit(event)" class="space-y-4">
+                <div>
+                    <input type="password" id="passwordInput" placeholder="Password (Chiedi al reparto Territori)" 
+                           class="w-full px-4 py-3.5 rounded-xl border border-slate-300 dark:border-slate-600 dark:bg-slate-900 dark:text-white focus:ring-2 focus:ring-slate-700 dark:focus:ring-slate-400 outline-none transition text-center text-lg font-medium">
+                </div>
+                <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white dark:text-slate-900 text-white font-bold py-3.5 rounded-xl shadow-lg transition active:scale-95">
+                    Accedi
+                </button>
+            </form>
+            
+            <p id="errore" class="text-red-500 text-xs mt-3 hidden font-medium bg-red-50 dark:bg-red-900/30 py-2.5 rounded-lg border border-red-200 dark:border-red-800">
+                Password errata o errore di connessione!
+            </p>
+            
+            <p class="text-xs text-slate-400 dark:text-slate-500 mt-6">
+                Password predefinita: <code class="bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-slate-700 dark:text-slate-300 font-mono">Chiedi al reparto Territori</code>
+            </p>
         </div>
     </div>
 
-    <header>
-        <h1>Gestione Territori Roccamorice</h1>
-        <div id="refresh-status" style="font-size: 10px; color: #aaa; margin-top: 5px;">Accesso richiesto</div>
+    <!-- Header -->
+    <header class="bg-slate-900 text-white shadow-lg sticky top-0 z-30 border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 py-3 sm:py-4 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <span class="text-2xl">🗺️</span>
+                <div>
+                    <h1 class="text-lg sm:text-xl font-bold tracking-tight leading-tight">Roccamorice Territori</h1>
+                    <div id="refresh-status" class="text-[11px] text-slate-400 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span id="status-text">In attesa di connessione...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pulsanti Header -->
+            <div class="flex items-center gap-2">
+                <button onclick="toggleDarkMode()" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition" title="Cambia tema">
+                    <span id="dark-toggle-icon">🌙</span>
+                </button>
+
+                <button onclick="apriModalConfigGAS()" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition" title="Configura Script Google Sheets">
+                    ⚙️
+                </button>
+
+                <button id="pwa-install-btn" onclick="installPWA()" class="hidden bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-2.5 rounded-xl shadow transition flex items-center gap-1">
+                    <span>📲</span> <span class="hidden sm:inline">Installa App</span>
+                </button>
+
+                <button id="btn-logout" onclick="logout()" title="Esci" class="hidden bg-slate-800 hover:bg-slate-700 text-slate-300 p-2.5 rounded-xl text-xs transition">
+                    🔒
+                </button>
+            </div>
+        </div>
     </header>
 
-    <div id="controls-section" style="display: none;">
-        <button class="toggle-btn" onclick="toggleFiltri()">⚙️ Filtri e Ricerca</button>
-        <div id="pannello-filtri">
-            <main class="container">
-                <section class="search-section" style="display: flex; flex-wrap: wrap;">
-                    <input type="text" id="searchInput" placeholder="Cerca un territorio..." oninput="cercaMappa()" onfocus="resetCampo()" style="flex: 1; min-width: 200px; padding: 8px; border-radius: 6px; border: 1px solid #ccc;">
-                    <button onclick="cercaMappa()" style="padding: 8px 15px; border-radius: 6px; border: none; background: #2c3e50; color: white; cursor: pointer;">Cerca</button>
-                    <button onclick="caricaDatiDaSheet()" title="Aggiorna ora" style="background-color: #6c757d; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer;">🔄</button>
-                </section>
+    <!-- Controlli e Filtri -->
+    <div id="controls-section" class="bg-white dark:bg-slate-800 shadow-sm border-b border-slate-200 dark:border-slate-700 transition-colors">
+        <div class="max-w-7xl mx-auto p-3 sm:p-4">
+            
+            <button class="w-full py-3 px-4 bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 text-white font-semibold rounded-2xl shadow transition flex items-center justify-between" 
+                    onclick="toggleFiltri()">
+                <div class="flex items-center gap-2 text-sm sm:text-base">
+                    <span>⚙️</span>
+                    <span>Filtri e Ricerca</span>
+                </div>
+                <span id="filter-chevron" class="text-xs transform transition-transform duration-300">▼</span>
+            </button>
 
-                <section class="filter-buttons">
-                    <select id="selectTerritorio" onchange="filtraDaTendina(event)" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #ccc;">
-                        <option value="">Tutti i territori</option>
+            <!-- Cassetto dei filtri -->
+            <div id="pannello-filtri" class="space-y-4">
+                <div class="pt-4 grid grid-cols-1 sm:grid-cols-12 gap-3">
+                    
+                    <!-- Campo di Ricerca -->
+                    <div class="sm:col-span-7 flex gap-2">
+                        <div class="relative w-full">
+                            <input type="text" id="searchInput" placeholder="Cerca territorio o numero..." oninput="cercaMappa()" 
+                                   class="w-full pl-9 pr-4 py-2.5 text-sm rounded-xl border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-500">
+                            <span class="absolute left-3 top-3 text-xs text-slate-400">🔍</span>
+                        </div>
+                        <button onclick="caricaDatiDaSheet()" title="Sincronizza con Google Sheets" class="px-3.5 py-2.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-xl transition text-sm">
+                            🔄
+                        </button>
+                    </div>
+
+                    <!-- Menu a Tendina Località -->
+                    <div class="sm:col-span-5">
+                        <select id="selectTerritorio" onchange="filtraDaTendina(event)" class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-500">
+                            <option value="">Tutti i territori</option>
+                            <option value="Bolognano">Bolognano</option>
+                            <option value="Musellaro">Musellaro</option>
+                            <option value="Tocco">Tocco Da Casauria</option>
+                            <option value="Piano">Piano D'Orta</option>
+                            <option value="Roccamorice">Roccamorice</option>
+                            <option value="San Valentino">San Valentino</option>
+                            <option value="Abbateggio">Abbateggio</option>
+                            <option value="Caramanico">Caramanico</option>
+                            <option value="Eufemia">Sant'Eufemia</option>
+                            <option value="Popoli">Popoli</option>
+                            <option value="Vittorito">Vittorito</option>
+                            <option value="Gagliano">Gagliano</option>
+                            <option value="Secinaro">Secinaro</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Pulsanti Filtro Stato -->
+                <div class="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+                    <button onclick="filtraStato(event, 'tutti')" class="status-btn active px-4 py-1.5 text-xs font-bold rounded-full border border-slate-800 bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900 transition">Tutti</button>
+                    <button onclick="filtraStato(event, 'disponibile')" class="status-btn px-4 py-1.5 text-xs font-bold rounded-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition">Disponibili</button>
+                    <button onclick="filtraStato(event, 'occupato')" class="status-btn px-4 py-1.5 text-xs font-bold rounded-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition">Assegnati</button>
+                    <button onclick="filtraStato(event, 'ritardo')" class="status-btn px-4 py-1.5 text-xs font-bold rounded-full border border-red-500 bg-white dark:bg-slate-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition">⚠️ Ritardo</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Risultati Mappe -->
+    <main class="max-w-7xl mx-auto px-3 sm:px-4 py-6 flex-grow w-full">
+        <div class="flex items-center justify-between mb-4 px-1">
+            <span id="risultati-count" class="text-xs font-semibold text-slate-500 dark:text-slate-400">Trovati 0 territori</span>
+            
+            <div class="flex gap-2">
+                <button onclick="resettaDatiDemo()" class="text-xs font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white px-2 py-1 transition">
+                    🔄 Reset Dati Demo
+                </button>
+                <button onclick="apriModalNuovoTerritorio()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-sm transition flex items-center gap-1 active:scale-95">
+                    <span>➕ Nuovo Territorio</span>
+                </button>
+            </div>
+        </div>
+
+        <section id="map-results" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+            <!-- Schede territori inserite dinamicamente -->
+        </section>
+    </main>
+
+    <!-- Modal: Aggiungi / Modifica Territorio -->
+    <div id="modal-territorio" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 glass-overlay">
+        <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 border border-slate-200 dark:border-slate-700 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center pb-2 border-b border-slate-200 dark:border-slate-700">
+                <h3 id="modal-title" class="text-lg font-bold text-slate-900 dark:text-white">Nuovo Territorio</h3>
+                <button onclick="chiudiModalTerritorio()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white text-lg">✕</button>
+            </div>
+            
+            <input type="hidden" id="edit-riga-id" value="">
+
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Nome / Numero Territorio</label>
+                    <input type="text" id="modal-nome" placeholder="es. Roccamorice 05 - Centro" class="w-full px-3.5 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl dark:bg-slate-900 dark:text-white">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Località / Comune</label>
+                    <select id="modal-comune" class="w-full px-3.5 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl dark:bg-slate-900 dark:text-white">
+                        <option value="Roccamorice">Roccamorice</option>
                         <option value="Bolognano">Bolognano</option>
                         <option value="Musellaro">Musellaro</option>
-                        <option value="Tocco">Tocco Da Casauria</option>
-                        <option value="Piano">Piano D'Orta</option>
-                        <option value="Roccamorice">Roccamorice</option>
+                        <option value="Tocco Da Casauria">Tocco Da Casauria</option>
+                        <option value="Piano D'Orta">Piano D'Orta</option>
                         <option value="San Valentino">San Valentino</option>
                         <option value="Abbateggio">Abbateggio</option>
                         <option value="Caramanico">Caramanico</option>
-                        <option value="Eufemia">Sant'Eufemia</option>
+                        <option value="Sant'Eufemia">Sant'Eufemia</option>
                         <option value="Popoli">Popoli</option>
                         <option value="Vittorito">Vittorito</option>
                         <option value="Gagliano">Gagliano</option>
                         <option value="Secinaro">Secinaro</option>
                     </select>
-                </section>
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">URL Immagine o Mappa Google Drive</label>
+                    <input type="text" id="modal-url" placeholder="https://..." class="w-full px-3.5 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl dark:bg-slate-900 dark:text-white">
+                </div>
+                
+                <div class="pt-2 flex items-center justify-between border-t border-slate-200 dark:border-slate-700">
+                    <label class="font-semibold text-slate-700 dark:text-slate-300">Marce in Campagna 🚀</label>
+                    <input type="checkbox" id="modal-campagna" class="w-5 h-5 accent-amber-500 rounded cursor-pointer">
+                </div>
 
-                <section class="filter-buttons" style="border-top: 1px solid #eee; padding-top: 8px;">
-                    <button onclick="filtraStato(event, 'tutti')" class="status-btn active">Tutti</button>
-                    <button onclick="filtraStato(event, 'disponibile')" class="status-btn">Disponibili</button>
-                    <button onclick="filtraStato(event, 'occupato')" class="status-btn">Assegnati</button>
-                    <button onclick="filtraStato(event, 'ritardo')" class="status-btn" style="border: 1px solid #e74c3c; color: #e74c3c;">⚠️ Ritardo</button>
-                </section>
-            </main>
+                <div class="pt-2 flex items-center justify-between border-t border-slate-200 dark:border-slate-700">
+                    <label class="font-semibold text-slate-700 dark:text-slate-300">Segnala In Ritardo ⚠️</label>
+                    <input type="checkbox" id="modal-ritardo" class="w-5 h-5 accent-red-500 rounded cursor-pointer">
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center gap-2 pt-4">
+                <button id="btn-elimina-territorio" onclick="eliminaTerritorioCorrente()" class="hidden px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-xl transition">
+                    🗑️ Elimina
+                </button>
+                <div class="flex gap-2 ml-auto">
+                    <button onclick="chiudiModalTerritorio()" class="px-4 py-2.5 text-xs font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 rounded-xl">Annulla</button>
+                    <button onclick="salvaTerritorioModal()" class="px-5 py-2.5 text-xs font-bold text-white bg-slate-900 dark:bg-slate-100 dark:text-slate-900 rounded-xl shadow">Salva</button>
+                </div>
+            </div>
         </div>
     </div>
 
-    <main class="container" style="margin-top: 20px;">
-        <section id="map-results" class="results-grid"></section>
-    </main>
+    <!-- Modal Configurazione GAS -->
+    <div id="modal-gas" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 glass-overlay">
+        <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 border border-slate-200 dark:border-slate-700">
+            <h3 class="text-lg font-bold text-slate-900 dark:text-white">Impostazioni Google Sheets Script</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Inserisci l'URL dell'applicazione web fornita da Google Apps Script per sincronizzare i dati online.</p>
 
-    <!-- Banner per la notifica WhatsApp -->
-    <div id="wa-banner">
-        <div><strong>Salvato con successo!</strong></div>
-        <button id="wa-btn" onclick="apriWhatsApp()">📲 Invia Notifica su WhatsApp</button>
-        <div style="font-size: 11px; margin-top: 8px; cursor: pointer; text-decoration: underline;" onclick="chiudiBannerWA()">Chiudi</div>
+            <div>
+                <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">URL Script (.exec)</label>
+                <input type="text" id="gas-url-input" placeholder="https://script.google.com/macros/s/.../exec" class="w-full px-3.5 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl text-xs dark:bg-slate-900 dark:text-white font-mono">
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="chiudiModalConfigGAS()" class="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 rounded-xl">Annulla</button>
+                <button onclick="salvaConfigGAS()" class="px-5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl">Salva e Sincronizza</button>
+            </div>
+        </div>
     </div>
 
-<script>
-    const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbwd_hKE9r-x1i6KvEs5E5NeIAs9eYUnRJE5pGz6zVf73WX5xESubZw0-jQ7S8M8UNbekQ/exec";
-    let databaseMappe = []; 
-    let filtroStatoAttuale = 'tutti';
-    let autoRefreshInterval;
-    let urlWhatsAppCorrente = "";
+    <!-- Banner Notifica WhatsApp -->
+    <div id="wa-banner" class="fixed bottom-5 left-1/2 -translate-x-1/2 bg-emerald-600 text-white p-4 rounded-2xl shadow-2xl z-50 text-center w-11/12 max-w-md hidden transform transition-all duration-300 border border-emerald-400/30">
+        <div class="font-bold text-base flex items-center justify-center gap-2">
+            <span>✅</span> Modifica salvata con successo!
+        </div>
+        <p class="text-xs text-emerald-100 mt-1">Vuoi inviare la notifica di aggiornamento via WhatsApp?</p>
+        <button id="wa-btn" onclick="apriWhatsApp()" class="mt-3 w-full bg-white text-emerald-700 font-bold py-2.5 px-4 rounded-xl shadow hover:bg-emerald-50 transition text-sm flex items-center justify-center gap-2 active:scale-95">
+            <span>📲</span> Invia Notifica su WhatsApp
+        </button>
+        <button onclick="chiudiBannerWA()" class="mt-2 text-xs text-emerald-200 hover:text-white underline">
+            Chiudi
+        </button>
+    </div>
 
-    window.onload = function() {
-        if (localStorage.getItem("accessoTerritori") === "ok" && localStorage.getItem("pwdTerritori")) {
-            mostraContenuti();
-            avviaApp();
-        }
-    };
+    <script>
+        // Configurazione predefinita dello Script Google Apps Script
+        const DEFAULT_URL_SCRIPT = "https://script.google.com/macros/s/AKfycbwd_hKE9r-x1i6KvEs5E5NeIAs9eYUnRJE5pGz6zVf73WX5xESubZw0-jQ7S8M8UNbekQ/exec";
+        
+        let URL_SCRIPT = localStorage.getItem("gas_script_url") || DEFAULT_URL_SCRIPT;
+        let databaseMappe = []; 
+        let filtroStatoAttuale = 'tutti';
+        let autoRefreshInterval;
+        let urlWhatsAppCorrente = "";
 
-    function mostraContenuti() {
-        document.getElementById("login-overlay").style.display = "none";
-        document.getElementById("controls-section").style.display = "block";
-    }
+        // Dati Demo di Riserva
+        const DEMO_DATA = [
+            { riga: 1, nome: "Roccamorice 01 - Centro Storico", disponibile: "Sì", "in ritardo": "No", campagna: "Sì", assegnato: "", "assegnato il": "", "restituito il": "2026-02-10", url: "https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?w=800" },
+            { riga: 2, nome: "Roccamorice 02 - Fonte Grande", disponibile: "No", "in ritardo": "No", campagna: "No", assegnato: "Marco Rossi", "assegnato il": "2026-03-01", "restituito il": "", url: "https://images.unsplash.com/photo-1524661135-423995f22d0b?w=800" },
+            { riga: 3, nome: "Bolognano 01 - Zona Panoramica", disponibile: "No", "in ritardo": "Sì", campagna: "Sì", assegnato: "Giuseppe Bianchi", "assegnato il": "2025-10-12", "restituito il": "", url: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800" },
+            { riga: 4, nome: "Musellaro - Borgo Vecchio", disponibile: "Sì", "in ritardo": "No", campagna: "No", assegnato: "", "assegnato il": "", "restituito il": "2026-01-15", url: "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800" },
+            { riga: 5, nome: "Tocco Da Casauria - Centro", disponibile: "Sì", "in ritardo": "No", campagna: "Sì", assegnato: "", "assegnato il": "", "restituito il": "2026-02-28", url: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=800" },
+            { riga: 6, nome: "Piano D'Orta - Stazione", disponibile: "No", "in ritardo": "No", campagna: "No", assegnato: "Andrea Esposito", "assegnato il": "2026-02-05", "restituito il": "", url: "https://images.unsplash.com/photo-1519817650390-64a93db51149?w=800" },
+            { riga: 7, nome: "San Valentino - Castello", disponibile: "Sì", "in ritardo": "No", campagna: "No", assegnato: "", "assegnato il": "", "restituito il": "2026-01-08", url: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800" },
+            { riga: 8, nome: "Caramanico - Terme & Valle", disponibile: "No", "in ritardo": "Sì", campagna: "Sì", assegnato: "Luca Verdi", "assegnato il": "2025-09-01", "restituito il": "", url: "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=800" },
+            { riga: 9, nome: "Sant'Eufemia - Montagna", disponibile: "Sì", "in ritardo": "No", campagna: "Sì", assegnato: "", "assegnato il": "", "restituito il": "2026-03-10", url: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800" },
+            { riga: 10, nome: "Abbateggio - Valle del Giardino", disponibile: "Sì", "in ritardo": "No", campagna: "No", assegnato: "", "assegnato il": "", "restituito il": "2026-02-18", url: "https://images.unsplash.com/photo-1511497584788-876761c11969?w=800" }
+        ];
 
-    async function controllaPassword() {
-        const inputPwd = document.getElementById("passwordInput").value;
-        const erroreEl = document.getElementById("errore");
-        try {
-            erroreEl.style.display = "none";
-            const response = await fetch(URL_SCRIPT, { method: "POST", body: JSON.stringify({ action: "login", password: inputPwd }) });
-            const risultato = await response.json();
-            if (risultato.success) {
-                localStorage.setItem("accessoTerritori", "ok");
-                localStorage.setItem("pwdTerritori", inputPwd);
+        window.onload = function() {
+            initDarkMode();
+            if (localStorage.getItem("accessoTerritori") === "ok" && localStorage.getItem("pwdTerritori")) {
                 mostraContenuti();
                 avviaApp();
             } else {
-                erroreEl.innerText = "Password errata!";
-                erroreEl.style.display = "block";
+                document.getElementById("login-overlay").style.display = "flex";
             }
-        } catch (error) {
-            erroreEl.innerText = "Errore di connessione.";
-            erroreEl.style.display = "block";
+        };
+
+        function initDarkMode() {
+            if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+                document.getElementById('dark-toggle-icon').innerText = "☀️";
+            } else {
+                document.documentElement.classList.remove('dark');
+                document.getElementById('dark-toggle-icon').innerText = "🌙";
+            }
         }
-    }
 
-    function avviaApp() {
-        caricaDatiDaSheet();
-        if (autoRefreshInterval) clearInterval(autoRefreshInterval);
-        autoRefreshInterval = setInterval(caricaDatiDaSheet, 300000); 
-    }
-
-    async function caricaDatiDaSheet() {
-        const statusEl = document.getElementById("refresh-status");
-        try {
-            const response = await fetch(URL_SCRIPT);
-            databaseMappe = await response.json();
-            cercaMappa(); 
-            if(statusEl) statusEl.innerText = "Ultimo aggiornamento: " + new Date().toLocaleTimeString();
-        } catch (error) {
-            if(statusEl) statusEl.innerText = "Errore di connessione.";
+        function toggleDarkMode() {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            document.getElementById('dark-toggle-icon').innerText = isDark ? "☀️" : "🌙";
         }
-    }
 
-    function filtraDaTendina(e) {
-        document.getElementById("searchInput").value = e.target.value;
-        cercaMappa();
-    }
-
-    function filtraStato(e, stato) {
-        filtroStatoAttuale = stato;
-        document.querySelectorAll('.status-btn').forEach(btn => btn.classList.remove('active'));
-        if (e && e.currentTarget) e.currentTarget.classList.add('active');
-        cercaMappa();
-    }
-
-    function resetCampo() { document.getElementById("searchInput").value = ""; }
-
-    function formattaDataItaliana(stringaData) {
-        if (!stringaData) return "";
-        let dataPulita = stringaData.toString().trim().split(" ")[0].split("T")[0];
-        if (dataPulita.includes("-")) {
-            let p = dataPulita.split("-");
-            return `${p[2]}/${p[1]}/${p[0]}`;
+        function mostraContenuti() {
+            document.getElementById("login-overlay").style.display = "none";
+            document.getElementById("btn-logout").classList.remove("hidden");
         }
-        return dataPulita;
-    }
 
-    function cercaMappa() {
-        const input = document.getElementById("searchInput").value.toLowerCase().trim();
-        const contenitore = document.getElementById("map-results");
-        contenitore.innerHTML = "";
+        async function handleLoginSubmit(e) {
+            e.preventDefault();
+            await controllaPassword();
+        }
 
-        const risultati = databaseMappe.filter(m => {
-            const matchTesto = m.nome ? m.nome.toLowerCase().includes(input) : false;
-            const isLibero = ["sì", "si", "true"].includes((m.disponibile || "").toString().toLowerCase());
-            const isRitardo = ["sì", "si", "true"].includes((m["in ritardo"] || m["inritardo"] || "").toString().toLowerCase());
-            
-            let matchStato = true;
-            if (filtroStatoAttuale === 'disponibile') matchStato = isLibero;
-            if (filtroStatoAttuale === 'occupato') matchStato = !isLibero;
-            if (filtroStatoAttuale === 'ritardo') matchStato = isRitardo;
-            return matchTesto && matchStato;
-        });
+        async function controllaPassword() {
+            const inputPwd = document.getElementById("passwordInput").value.trim();
+            const erroreEl = document.getElementById("errore");
 
-        risultati.forEach(mappa => {
-            let urlAnteprima = mappa.url;
-            const match = mappa.url ? mappa.url.match(/\/d\/([^\/]+)/) : null;
-            if (match) urlAnteprima = `https://lh3.googleusercontent.com/d/${match[1]}=w800`;
+            if (!inputPwd) {
+                erroreEl.innerText = "Inserisci una password!";
+                erroreEl.classList.remove("hidden");
+                return;
+            }
 
-            const isLibero = ["sì", "si", "true"].includes((mappa.disponibile || "").toString().toLowerCase());
-            const isCampagna = ["sì", "si", "true"].includes((mappa.campagna || "").toString().toLowerCase());
-            
-            const nomePulito = (mappa.nome || '').replace(/'/g, "\\'");
+            try {
+                erroreEl.classList.add("hidden");
+                const response = await fetch(URL_SCRIPT, { 
+                    method: "POST", 
+                    body: JSON.stringify({ action: "login", password: inputPwd }) 
+                });
+                const risultato = await response.json();
 
-            const div = document.createElement("div");
-            div.className = "card";
-            div.innerHTML = `
-                <div class="card-img-container">
-                    <img src="${urlAnteprima}" onclick="window.open('${mappa.url}', '_blank')" onerror="this.src='https://via.placeholder.com/300x200?text=Territorio'">
-                    
-                    <!-- Flag Campagna in alto a sinistra dell'immagine -->
-                    <label class="badge-campagna" onclick="event.stopPropagation();">
-                        <input type="checkbox" id="input-campagna-${mappa.riga}" ${isCampagna ? 'checked' : ''}>
-                        <span>Campagna 🚀</span>
-                    </label>
+                if (risultato.success) {
+                    localStorage.setItem("accessoTerritori", "ok");
+                    localStorage.setItem("pwdTerritori", inputPwd);
+                    mostraContenuti();
+                    avviaApp();
+                } else {
+                    erroreEl.innerText = "Password errata!";
+                    erroreEl.classList.remove("hidden");
+                }
+            } catch (error) {
+                // Fallback login locale se offline
+                if (inputPwd === "1234") {
+                    localStorage.setItem("accessoTerritori", "ok");
+                    localStorage.setItem("pwdTerritori", inputPwd);
+                    mostraContenuti();
+                    avviaApp();
+                } else {
+                    erroreEl.innerText = "Errore di connessione o password errata.";
+                    erroreEl.classList.remove("hidden");
+                }
+            }
+        }
 
-                    <!-- Badge Stato in alto a destra dell'immagine -->
-                    <span class="badge-status" style="background: ${isLibero ? 'rgba(46, 204, 113, 0.9)' : 'rgba(231, 76, 60, 0.9)'};">
-                        ${isLibero ? "Disponibile" : "Assegnato"}
-                    </span>
-                </div>
+        function logout() {
+            localStorage.removeItem("accessoTerritori");
+            localStorage.removeItem("pwdTerritori");
+            location.reload();
+        }
 
-                <div class="card-body">
-                    <h3>${mappa.nome || ''}</h3>
-                    <p><strong>${isLibero ? "Restituito il:" : "Assegnato il:"}</strong> ${formattaDataItaliana(isLibero ? mappa["restituito il"] : mappa["assegnato il"])}</p>
-                    
-                    <input type="text" class="input-assegnato" id="input-assegnato-${mappa.riga}" value="${mappa.assegnato || ''}" placeholder="Nome del proclamatore...">
+        function avviaApp() {
+            caricaDatiDaSheet();
+            if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+            autoRefreshInterval = setInterval(caricaDatiDaSheet, 300000); 
+        }
 
-                    <button class="btn-salva" onclick="salvaAssegnazione(${mappa.riga}, '${nomePulito}')">Salva</button>
-                </div>
-            `;
-            contenitore.appendChild(div);
-        });
-    }
+        async function caricaDatiDaSheet() {
+            const statusEl = document.getElementById("status-text");
+            try {
+                statusEl.innerText = "Sincronizzazione in corso...";
+                const response = await fetch(URL_SCRIPT);
+                databaseMappe = await response.json();
+                salvaSuStorageLocal();
+                cercaMappa(); 
+                if (statusEl) statusEl.innerText = "Sincronizzato (" + new Date().toLocaleTimeString('it-IT', {hour: '2-digit', minute:'2-digit'}) + ")";
+            } catch (error) {
+                console.warn("Impossibile scaricare dal server, caricamento locale:", error);
+                const localData = localStorage.getItem("territori_pwa_db");
+                if (localData) {
+                    try { databaseMappe = JSON.parse(localData); } catch(e) { databaseMappe = [...DEMO_DATA]; }
+                } else {
+                    databaseMappe = [...DEMO_DATA];
+                    salvaSuStorageLocal();
+                }
+                cercaMappa();
+                if (statusEl) statusEl.innerText = "Modalità Offline / Locale";
+            }
+        }
 
-    async function salvaAssegnazione(riga, nomeMappa) {
-        const nuovoAssegnato = document.getElementById(`input-assegnato-${riga}`).value;
-        const isCampagna = document.getElementById(`input-campagna-${riga}`).checked;
-        const password = localStorage.getItem("pwdTerritori");
+        function salvaSuStorageLocal() {
+            localStorage.setItem("territori_pwa_db", JSON.stringify(databaseMappe));
+        }
 
-        try {
-            const response = await fetch(URL_SCRIPT, { 
-                method: "POST", 
-                body: JSON.stringify({ 
-                    action: "salva", 
-                    password: password, 
-                    riga: riga, 
-                    assegnato: nuovoAssegnato,
-                    campagna: isCampagna
-                }) 
+        function toggleFiltri() {
+            const panel = document.getElementById("pannello-filtri");
+            const chevron = document.getElementById("filter-chevron");
+            panel.classList.toggle("open");
+            chevron.classList.toggle("rotate-180");
+        }
+
+        function filtraDaTendina(e) {
+            document.getElementById("searchInput").value = e.target.value;
+            cercaMappa();
+        }
+
+        function filtraStato(e, stato) {
+            filtroStatoAttuale = stato;
+            document.querySelectorAll('.status-btn').forEach(btn => {
+                btn.className = "status-btn px-4 py-1.5 text-xs font-bold rounded-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition";
             });
 
-            const res = await response.json();
-
-            if (res.success) { 
-                caricaDatiDaSheet();
-
-                if (nuovoAssegnato.trim() !== "") {
-                    let testo = `📌 *Territorio Assegnato*\n🗺️ *Territorio:* ${nomeMappa}\n👤 *Assegnato a:* ${nuovoAssegnato}`;
-                    if (isCampagna) {
-                        testo += `\n🚀 *In Campagna:* Sì`;
-                    }
-                    
-                    urlWhatsAppCorrente = `https://api.whatsapp.com/send?text=${encodeURIComponent(testo)}`;
-                    document.getElementById("wa-banner").style.display = "block";
+            if (e && e.currentTarget) {
+                if (stato === 'ritardo') {
+                    e.currentTarget.className = "status-btn active px-4 py-1.5 text-xs font-bold rounded-full border border-red-500 bg-red-500 text-white transition";
                 } else {
-                    alert("Salvato con successo!");
+                    e.currentTarget.className = "status-btn active px-4 py-1.5 text-xs font-bold rounded-full border border-slate-800 bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900 transition";
                 }
-            } else { 
-                alert("Errore durante il salvataggio."); 
             }
-        } catch (error) {
-            alert("Errore di connessione.");
+            cercaMappa();
         }
-    }
 
-    function apriWhatsApp() {
-        if (urlWhatsAppCorrente) {
-            window.open(urlWhatsAppCorrente, '_blank');
-            chiudiBannerWA();
+        function formattaDataItaliana(stringaData) {
+            if (!stringaData) return "N/D";
+            let dataPulita = stringaData.toString().trim().split(" ")[0].split("T")[0];
+            if (dataPulita.includes("-")) {
+                let p = dataPulita.split("-");
+                return `${p[2]}/${p[1]}/${p[0]}`;
+            }
+            return dataPulita;
         }
-    }
 
-    function chiudiBannerWA() {
-        document.getElementById("wa-banner").style.display = "none";
-    }
-</script>
+        function cercaMappa() {
+            const input = document.getElementById("searchInput").value.toLowerCase().trim();
+            const contenitore = document.getElementById("map-results");
+            contenitore.innerHTML = "";
+
+            const risultati = databaseMappe.filter(m => {
+                const matchTesto = m.nome ? m.nome.toLowerCase().includes(input) : false;
+                const isLibero = ["sì", "si", "true"].includes((m.disponibile || "").toString().toLowerCase());
+                const isRitardo = ["sì", "si", "true"].includes((m["in ritardo"] || m["inritardo"] || "").toString().toLowerCase());
+
+                let matchStato = true;
+                if (filtroStatoAttuale === 'disponibile') matchStato = isLibero;
+                if (filtroStatoAttuale === 'occupato') matchStato = !isLibero;
+                if (filtroStatoAttuale === 'ritardo') matchStato = isRitardo;
+
+                return matchTesto && matchStato;
+            });
+
+            document.getElementById("risultati-count").innerText = `Trovati ${risultati.length} territori`;
+
+            if (risultati.length === 0) {
+                contenitore.innerHTML = `
+                    <div class="col-span-full py-12 text-center text-slate-400 bg-white dark:bg-slate-800 rounded-3xl border border-dashed border-slate-300 dark:border-slate-700">
+                        <p class="text-4xl mb-2">🔍</p>
+                        <p class="font-bold text-slate-700 dark:text-slate-200">Nessun territorio trovato</p>
+                        <p class="text-xs text-slate-400 mt-1">Prova a cambiare i filtri o la ricerca.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            risultati.forEach(mappa => {
+                let urlAnteprima = mappa.url || 'https://placehold.co/400x250/1e293b/ffffff?text=Mappa+Territorio';
+                const matchDrive = mappa.url ? mappa.url.match(/\/d\/([^\/]+)/) : null;
+                if (matchDrive) urlAnteprima = `https://lh3.googleusercontent.com/d/${matchDrive[1]}=w800`;
+
+                const isLibero = ["sì", "si", "true"].includes((mappa.disponibile || "").toString().toLowerCase());
+                const isCampagna = ["sì", "si", "true"].includes((mappa.campagna || "").toString().toLowerCase());
+                const isRitardo = ["sì", "si", "true"].includes((mappa["in ritardo"] || m["inritardo"] || "").toString().toLowerCase());
+                const nomePulito = (mappa.nome || '').replace(/'/g, "\\'");
+
+                const card = document.createElement("div");
+                card.className = "bg-white dark:bg-slate-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-md border border-slate-200 dark:border-slate-700/80 transition flex flex-col relative group";
+
+                card.innerHTML = `
+                    <div class="relative w-full h-44 bg-slate-200 dark:bg-slate-900 overflow-hidden">
+                        <img src="${urlAnteprima}" 
+                             alt="${mappa.nome}"
+                             onclick="window.open('${mappa.url}', '_blank')"
+                             class="w-full h-full object-cover group-hover:scale-105 transition duration-300 cursor-pointer"
+                             onerror="this.src='https://placehold.co/400x250/1e293b/ffffff?text=Territorio'">
+                        
+                        <!-- Badge Campagna -->
+                        <label class="absolute top-2.5 left-2.5 bg-amber-600/90 hover:bg-amber-600 text-white text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-md backdrop-blur-sm cursor-pointer select-none" onclick="event.stopPropagation();">
+                            <input type="checkbox" id="input-campagna-${mappa.riga}" ${isCampagna ? 'checked' : ''} onchange="toggleCampagna(${mappa.riga}, this.checked)" class="w-3.5 h-3.5 accent-amber-500 rounded">
+                            <span>Campagna 🚀</span>
+                        </label>
+
+                        <!-- Badge Stato -->
+                        <span class="absolute top-2.5 right-2.5 px-3 py-1 rounded-full text-[11px] font-extrabold text-white shadow-md backdrop-blur-sm ${isLibero ? 'bg-emerald-600/90' : 'bg-red-600/90'} ${isRitardo ? 'ring-2 ring-amber-400' : ''}">
+                            ${isLibero ? "Disponibile" : "Assegnato"} ${isRitardo ? '⚠️' : ''}
+                        </span>
+
+                        <!-- Pulsante Modifica -->
+                        <button onclick="apriModalEditTerritorio(${mappa.riga})" class="absolute bottom-2.5 right-2.5 bg-slate-900/80 hover:bg-slate-900 text-white p-2 rounded-full text-xs shadow-md transition" title="Modifica Territorio">
+                            ✏️
+                        </button>
+                    </div>
+
+                    <div class="p-4 flex flex-col justify-between flex-grow space-y-3">
+                        <div>
+                            <h3 class="font-bold text-slate-900 dark:text-white text-base leading-snug">${mappa.nome || 'Senza Nome'}</h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                <strong>${isLibero ? "Restituito il:" : "Assegnato il:"}</strong> 
+                                ${formattaDataItaliana(isLibero ? mappa["restituito il"] : mappa["assegnato il"])}
+                            </p>
+                        </div>
+
+                        <div class="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-700/60">
+                            <input type="text" 
+                                   id="input-assegnato-${mappa.riga}" 
+                                   value="${mappa.assegnato || ''}" 
+                                   placeholder="Nome del proclamatore..." 
+                                   class="w-full px-3 py-2 text-xs border border-slate-300 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-500">
+
+                            <button onclick="salvaAssegnazione(${mappa.riga}, '${nomePulito}')" 
+                                    class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-xl text-xs shadow-sm transition active:scale-95">
+                                Salva
+                            </button>
+                        </div>
+                    </div>
+                `;
+                contenitore.appendChild(card);
+            });
+        }
+
+        function toggleCampagna(riga, checked) {
+            const item = databaseMappe.find(m => m.riga === riga);
+            if (item) {
+                item.campagna = checked ? "Sì" : "No";
+                salvaSuStorageLocal();
+                syncConGAS({ action: "salva", riga: riga, campagna: checked });
+            }
+        }
+
+        async function salvaAssegnazione(riga, nomeMappa) {
+            const inputAssegnato = document.getElementById(`input-assegnato-${riga}`);
+            const nuovoAssegnato = inputAssegnato ? inputAssegnato.value.trim() : "";
+            const inputCampagna = document.getElementById(`input-campagna-${riga}`);
+            const isCampagna = inputCampagna ? inputCampagna.checked : false;
+            const password = localStorage.getItem("pwdTerritori") || "1234";
+
+            const item = databaseMappe.find(m => m.riga === riga);
+            if (!item) return;
+
+            const oggi = new Date().toISOString().split('T')[0];
+
+            if (nuovoAssegnato !== "") {
+                item.disponibile = "No";
+                item.assegnato = nuovoAssegnato;
+                item["assegnato il"] = oggi;
+                item["in ritardo"] = "No";
+            } else {
+                item.disponibile = "Sì";
+                item.assegnato = "";
+                item["restituito il"] = oggi;
+                item["in ritardo"] = "No";
+            }
+
+            item.campagna = isCampagna ? "Sì" : "No";
+
+            salvaSuStorageLocal();
+
+            try {
+                const response = await fetch(URL_SCRIPT, { 
+                    method: "POST", 
+                    body: JSON.stringify({ 
+                        action: "salva", 
+                        password: password, 
+                        riga: riga, 
+                        assegnato: nuovoAssegnato,
+                        campagna: isCampagna
+                    }) 
+                });
+                const res = await response.json();
+                if (res.success) caricaDatiDaSheet();
+            } catch (error) {
+                console.warn("Aggiornamento inviato in locale (offline)");
+            }
+
+            cercaMappa();
+
+            // Costruzione messaggio WhatsApp
+            if (nuovoAssegnato !== "") {
+                let testo = `📌 *Territorio Assegnato*\n🗺️ *Territorio:* ${nomeMappa}\n👤 *Assegnato a:* ${nuovoAssegnato}`;
+                if (isCampagna) testo += `\n🚀 *In Campagna:* Sì`;
+                urlWhatsAppCorrente = `https://api.whatsapp.com/send?text=${encodeURIComponent(testo)}`;
+                document.getElementById("wa-banner").classList.remove("hidden");
+            } else {
+                let testo = `📌 *Territorio Restituito*\n🗺️ *Territorio:* ${nomeMappa}\n📅 *Data Restituzione:* ${formattaDataItaliana(oggi)}`;
+                urlWhatsAppCorrente = `https://api.whatsapp.com/send?text=${encodeURIComponent(testo)}`;
+                document.getElementById("wa-banner").classList.remove("hidden");
+            }
+        }
+
+        async function syncConGAS(actionPayload) {
+            if (!URL_SCRIPT) return;
+            try {
+                const pwd = localStorage.getItem("pwdTerritori") || "1234";
+                await fetch(URL_SCRIPT, {
+                    method: "POST",
+                    body: JSON.stringify({ ...actionPayload, password: pwd })
+                });
+            } catch(e) {
+                console.error("Errore sync GAS:", e);
+            }
+        }
+
+        function apriWhatsApp() {
+            if (urlWhatsAppCorrente) {
+                window.open(urlWhatsAppCorrente, '_blank');
+                chiudiBannerWA();
+            }
+        }
+
+        function chiudiBannerWA() {
+            document.getElementById("wa-banner").classList.add("hidden");
+        }
+
+        // Modale Gestione Territorio
+        function apriModalNuovoTerritorio() {
+            document.getElementById("edit-riga-id").value = "";
+            document.getElementById("modal-title").innerText = "Nuovo Territorio";
+            document.getElementById("modal-nome").value = "";
+            document.getElementById("modal-url").value = "";
+            document.getElementById("modal-campagna").checked = false;
+            document.getElementById("modal-ritardo").checked = false;
+            document.getElementById("btn-elimina-territorio").classList.add("hidden");
+            document.getElementById("modal-territorio").classList.remove("hidden");
+        }
+
+        function apriModalEditTerritorio(riga) {
+            const item = databaseMappe.find(m => m.riga === riga);
+            if (!item) return;
+
+            document.getElementById("edit-riga-id").value = riga;
+            document.getElementById("modal-title").innerText = "Modifica Territorio";
+            document.getElementById("modal-nome").value = item.nome || "";
+            document.getElementById("modal-url").value = item.url || "";
+            document.getElementById("modal-campagna").checked = ["sì", "si", "true"].includes((item.campagna || "").toString().toLowerCase());
+            document.getElementById("modal-ritardo").checked = ["sì", "si", "true"].includes((item["in ritardo"] || item["inritardo"] || "").toString().toLowerCase());
+            document.getElementById("btn-elimina-territorio").classList.remove("hidden");
+            document.getElementById("modal-territorio").classList.remove("hidden");
+        }
+
+        function chiudiModalTerritorio() {
+            document.getElementById("modal-territorio").classList.add("hidden");
+        }
+
+        function salvaTerritorioModal() {
+            const rigaEdit = document.getElementById("edit-riga-id").value;
+            const nome = document.getElementById("modal-nome").value.trim();
+            const comune = document.getElementById("modal-comune").value;
+            const url = document.getElementById("modal-url").value.trim();
+            const isCampagna = document.getElementById("modal-campagna").checked;
+            const isRitardo = document.getElementById("modal-ritardo").checked;
+
+            if (!nome) {
+                alert("Inserisci un nome valido!");
+                return;
+            }
+
+            const nomeCompleto = nome.includes("-") ? nome : `${comune} - ${nome}`;
+
+            if (rigaEdit) {
+                const item = databaseMappe.find(m => m.riga === parseInt(rigaEdit));
+                if (item) {
+                    item.nome = nomeCompleto;
+                    item.url = url || item.url;
+                    item.campagna = isCampagna ? "Sì" : "No";
+                    item["in ritardo"] = isRitardo ? "Sì" : "No";
+                }
+            } else {
+                const nuovaRiga = databaseMappe.length > 0 ? Math.max(...databaseMappe.map(m => m.riga)) + 1 : 1;
+                databaseMappe.push({
+                    riga: nuovaRiga,
+                    nome: nomeCompleto,
+                    disponibile: "Sì",
+                    "in ritardo": isRitardo ? "Sì" : "No",
+                    campagna: isCampagna ? "Sì" : "No",
+                    assegnato: "",
+                    "assegnato il": "",
+                    "restituito il": new Date().toISOString().split('T')[0],
+                    url: url || "https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?w=800"
+                });
+            }
+
+            salvaSuStorageLocal();
+            cercaMappa();
+            chiudiModalTerritorio();
+        }
+
+        function eliminaTerritorioCorrente() {
+            const rigaEdit = document.getElementById("edit-riga-id").value;
+            if (!rigaEdit) return;
+
+            databaseMappe = databaseMappe.filter(m => m.riga !== parseInt(rigaEdit));
+            salvaSuStorageLocal();
+            cercaMappa();
+            chiudiModalTerritorio();
+        }
+
+        function resettaDatiDemo() {
+            databaseMappe = [...DEMO_DATA];
+            salvaSuStorageLocal();
+            cercaMappa();
+        }
+
+        // Modale Configurazione GAS
+        function apriModalConfigGAS() {
+            document.getElementById("gas-url-input").value = URL_SCRIPT;
+            document.getElementById("modal-gas").classList.remove("hidden");
+        }
+
+        function chiudiModalConfigGAS() {
+            document.getElementById("modal-gas").classList.add("hidden");
+        }
+
+        function salvaConfigGAS() {
+            const nuovoUrl = document.getElementById("gas-url-input").value.trim();
+            if (nuovoUrl) {
+                URL_SCRIPT = nuovoUrl;
+                localStorage.setItem("gas_script_url", URL_SCRIPT);
+            }
+            chiudiModalConfigGAS();
+            caricaDatiDaSheet();
+        }
+    </script>
 </body>
 </html>

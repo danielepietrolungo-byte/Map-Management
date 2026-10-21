@@ -7,7 +7,7 @@
     
     <!-- PWA Primary Meta Tags -->
     <meta name="theme-color" content="#1e293b">
-    <meta name="description" content="App per la gestione dei territori di predicazione a Roccamorice e zone limitrofe.">
+    <meta name="description" content="App per la gestione dei territori di predicazione a Roccamorice e zone limitrofe[span_4](start_span)[span_4](end_span).">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Territori">
@@ -83,6 +83,18 @@
         .badge-shadow {
             box-shadow: 0 2px 8px rgba(0,0,0,0.3);
         }
+
+        .clickable-counter {
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+        .clickable-counter:hover {
+            opacity: 0.8;
+            transform: scale(1.02);
+        }
+        .clickable-counter:active {
+            transform: scale(0.98);
+        }
     </style>
 </head>
 
@@ -120,7 +132,7 @@
                 🗺️
             </div>
             <h2 class="text-2xl font-black text-slate-900 dark:text-white tracking-tight mb-2">Gestione Territori</h2>
-            <p class="text-slate-500 dark:text-slate-400 text-sm mb-6">Inserisci la password per accedere al registro territori.</p>
+            <p class="text-slate-500 dark:text-slate-400 text-sm mb-6">Inserisci la password per accedere al registro territori[span_5](start_span)[span_5](end_span).</p>
 
             <form onsubmit="handleLoginSubmit(event)" class="space-y-4">
                 <div>
@@ -197,7 +209,7 @@
                     <!-- Campo di Ricerca -->
                     <div class="sm:col-span-7 flex gap-2">
                         <div class="relative w-full">
-                            <input type="text" id="searchInput" placeholder="Cerca territorio o numero..." oninput="cercaMappa()" 
+                            <input type="text" id="searchInput" placeholder="Cerca territorio, numero o proclamatore..." oninput="cercaMappa()" 
                                    class="w-full pl-9 pr-4 py-2.5 text-sm rounded-xl border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-500">
                             <span class="absolute left-3 top-3 text-xs text-slate-400">🔍</span>
                         </div>
@@ -240,8 +252,23 @@
 
     <!-- Risultati Mappe -->
     <main class="max-w-7xl mx-auto px-3 sm:px-4 py-6 flex-grow w-full">
-        <div class="flex items-center justify-between mb-4 px-1">
-            <span id="risultati-count" class="text-xs font-semibold text-slate-500 dark:text-slate-400">Trovati 0 territori</span>
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 px-1">
+            <div class="flex flex-col gap-1 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                <div class="flex flex-wrap items-center gap-2">
+                    <span id="risultati-count">Trovati 0 territori</span>
+                    <span class="text-slate-300 dark:text-slate-600">•</span>
+                    <span onclick="selezionaFiltroContatore('disponibile')" class="clickable-counter text-emerald-600 dark:text-emerald-400 underline decoration-dotted">Liberi: <strong id="count-liberi">0</strong></span>
+                    <span class="text-slate-300 dark:text-slate-600">•</span>
+                    <span onclick="selezionaFiltroContatore('occupato')" class="clickable-counter text-red-600 dark:text-red-400 underline decoration-dotted">Assegnati: <strong id="count-assegnati">0</strong></span>
+                </div>
+                <div class="flex flex-wrap items-center gap-2 text-[11px]">
+                    <span onclick="selezionaFiltroContatore('da_registrare')" class="clickable-counter text-amber-600 dark:text-amber-400 underline decoration-dotted">Da registrare: <strong id="count-da-registrare">0</strong></span>
+                    <span class="text-slate-300 dark:text-slate-600">•</span>
+                    <span onclick="selezionaFiltroContatore('pronti')" class="clickable-counter text-blue-600 dark:text-blue-400 underline decoration-dotted">Pronti a uscire: <strong id="count-pronti">0</strong></span>
+                    <span class="text-slate-300 dark:text-slate-600">•</span>
+                    <span onclick="selezionaFiltroContatore('ritardo')" class="clickable-counter text-red-500 underline decoration-dotted">In ritardo: <strong id="count-in-ritardo">0</strong></span>
+                </div>
+            </div>
             
             <div class="flex gap-2">
                 <button onclick="resettaDatiDemo()" class="text-xs font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white px-2 py-1 transition">
@@ -319,6 +346,34 @@
         </div>
     </div>
 
+    <!-- Modal Scelta Data e Riassegnazione per Rientro -->
+    <div id="modal-rientro" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 glass-overlay">
+        <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 max-w-sm w-full shadow-2xl space-y-4 border border-slate-200 dark:border-slate-700 text-center">
+            <div class="w-14 h-14 bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 rounded-2xl flex items-center justify-center mx-auto text-2xl">
+                📅
+            </div>
+            <h3 class="text-lg font-bold text-slate-900 dark:text-white">Gestisci Rientro Territorio</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Scegli la data di restituzione e opzionalmente riassegna alla stessa persona:</p>
+
+            <input type="hidden" id="rientro-riga-id" value="">
+            
+            <div class="text-left space-y-1">
+                <label class="text-[11px] font-semibold text-slate-600 dark:text-slate-400">Data:</label>
+                <input type="date" id="rientro-data-input" class="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl text-sm font-medium dark:bg-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 text-center">
+            </div>
+
+            <div class="pt-2 flex items-center justify-between border-t border-slate-100 dark:border-slate-700 text-left">
+                <label for="rientro-riascolto-checkbox" class="text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer">Riassegna alla stessa persona 🔄</label>
+                <input type="checkbox" id="rientro-riascolto-checkbox" class="w-5 h-5 accent-amber-500 rounded cursor-pointer">
+            </div>
+
+            <div class="flex gap-2 pt-2">
+                <button onclick="chiudiModalRientro()" class="flex-1 px-4 py-2.5 text-xs font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 rounded-xl">Annulla</button>
+                <button onclick="confermaRientroTerritorio()" class="flex-1 px-4 py-2.5 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-xl shadow">Conferma</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal Configurazione GAS -->
     <div id="modal-gas" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 glass-overlay">
         <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 border border-slate-200 dark:border-slate-700">
@@ -366,13 +421,13 @@
             { riga: 1, nome: "Roccamorice 01 - Centro Storico", disponibile: "Sì", "in ritardo": "No", campagna: "Sì", assegnato: "", "assegnato il": "", "restituito il": "2026-02-10", url: "https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?w=800" },
             { riga: 2, nome: "Roccamorice 02 - Fonte Grande", disponibile: "No", "in ritardo": "No", campagna: "No", assegnato: "Marco Rossi", "assegnato il": "2026-03-01", "restituito il": "", url: "https://images.unsplash.com/photo-1524661135-423995f22d0b?w=800" },
             { riga: 3, nome: "Bolognano 01 - Zona Panoramica", disponibile: "No", "in ritardo": "Sì", campagna: "Sì", assegnato: "Giuseppe Bianchi", "assegnato il": "2025-10-12", "restituito il": "", url: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800" },
-            { riga: 4, nome: "Musellaro - Borgo Vecchio", disponibile: "Sì", "in ritardo": "No", campagna: "No", assegnato: "", "assegnato il": "", "restituito il": "2026-01-15", url: "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800" },
+            { riga: 4, nome: "Musellaro - Borgo Vecchio", disponibile: "Sì", "in ritardo": "No", campagna: "No", assegnato: "", "assegnato il": "", "restituito il": "2025-08-15", url: "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800" },
             { riga: 5, nome: "Tocco Da Casauria - Centro", disponibile: "Sì", "in ritardo": "No", campagna: "Sì", assegnato: "", "assegnato il": "", "restituito il": "2026-02-28", url: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=800" },
-            { riga: 6, nome: "Piano D'Orta - Stazione", disponibile: "No", "in ritardo": "No", campagna: "No", assegnato: "Andrea Esposito", "assegnato il": "2026-02-05", "restituito il": "", url: "https://images.unsplash.com/photo-1519817650390-64a93db51149?w=800" },
+            { riga: 6, nome: "Piano D'Orta - Stazione", disponibile: "No", "in ritardo": "No", campagna: "No", assegnato: "Andrea Esposito", "assegnato il": "2025-10-01", "restituito il": "", url: "https://images.unsplash.com/photo-1519817650390-64a93db51149?w=800" },
             { riga: 7, nome: "San Valentino - Castello", disponibile: "Sì", "in ritardo": "No", campagna: "No", assegnato: "", "assegnato il": "", "restituito il": "2026-01-08", url: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800" },
             { riga: 8, nome: "Caramanico - Terme & Valle", disponibile: "No", "in ritardo": "Sì", campagna: "Sì", assegnato: "Luca Verdi", "assegnato il": "2025-09-01", "restituito il": "", url: "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=800" },
-            { riga: 9, nome: "Sant'Eufemia - Montagna", disponibile: "Sì", "in ritardo": "No", campagna: "Sì", assegnato: "", "assegnato il": "", "restituito il": "2026-03-10", url: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800" },
-            { riga: 10, nome: "Abbateggio - Valle del Giardino", disponibile: "Sì", "in ritardo": "No", campagna: "No", assegnato: "", "assegnato il": "", "restituito il": "2026-02-18", url: "https://images.unsplash.com/photo-1511497584788-876761c11969?w=800" }
+            { riga: 9, nome: "Sant'Eufemia - Montagna", disponibile: "Sì", "in ritardo": "No", campagna: "Sì", assegnato: "", "assegnato il": "", "restituito il": "2025-01-10", url: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800" },
+            { riga: 10, nome: "Abbateggio - Valle del Giardino", disponibile: "Sì", "in ritardo": "No", campagna: "No", assegnato: "", "assegnato il": "", "restituito il": "2025-02-18", url: "https://images.unsplash.com/photo-1511497584788-876761c11969?w=800" }
         ];
 
         window.onload = function() {
@@ -519,6 +574,14 @@
             cercaMappa();
         }
 
+        function selezionaFiltroContatore(tipo) {
+            filtroStatoAttuale = tipo;
+            document.querySelectorAll('.status-btn').forEach(btn => {
+                btn.className = "status-btn px-4 py-1.5 text-xs font-bold rounded-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition";
+            });
+            cercaMappa();
+        }
+
         function formattaDataItaliana(stringaData) {
             if (!stringaData) return "N/D";
             let dataPulita = stringaData.toString().trim().split(" ")[0].split("T")[0];
@@ -534,20 +597,96 @@
             const contenitore = document.getElementById("map-results");
             contenitore.innerHTML = "";
 
+            const oggi = new Date();
+
             const risultati = databaseMappe.filter(m => {
-                const matchTesto = m.nome ? m.nome.toLowerCase().includes(input) : false;
+                const matchNome = m.nome ? m.nome.toLowerCase().includes(input) : false;
+                const matchAssegnato = m.assegnato ? m.assegnato.toLowerCase().includes(input) : false;
+                const matchTesto = matchNome || matchAssegnato;
+
                 const isLibero = ["sì", "si", "true"].includes((m.disponibile || "").toString().toLowerCase());
-                const isRitardo = ["sì", "si", "true"].includes((m["in ritardo"] || m["inritardo"] || "").toString().toLowerCase());
+                
+                let isRitardoCalcolato = false;
+                let isDaRegistrare = false;
+                let isPronto = false;
+
+                if (isLibero && m["restituito il"]) {
+                    let dataRestituzione = new Date(m["restituito il"]);
+                    if (!isNaN(dataRestituzione)) {
+                        let diffGiorni = Math.floor((oggi - dataRestituzione) / (1000 * 60 * 60 * 24));
+                        let diffMesiRestituzione = (oggi.getFullYear() - dataRestituzione.getFullYear()) * 12 + (oggi.getMonth() - dataRestituzione.getMonth());
+                        if (diffMesiRestituzione >= 6) {
+                            isRitardoCalcolato = true;
+                        } else if (diffGiorni >= 7) {
+                            isPronto = true;
+                        }
+                    }
+                } else if (!isLibero && m["assegnato il"]) {
+                    let dataAssegnazione = new Date(m["assegnato il"]);
+                    if (!isNaN(dataAssegnazione)) {
+                        let diffMesiAssegnazione = (oggi.getFullYear() - dataAssegnazione.getFullYear()) * 12 + (oggi.getMonth() - dataAssegnazione.getMonth());
+                        if (diffMesiAssegnazione >= 4) {
+                            isDaRegistrare = true;
+                        }
+                    }
+                }
 
                 let matchStato = true;
                 if (filtroStatoAttuale === 'disponibile') matchStato = isLibero;
                 if (filtroStatoAttuale === 'occupato') matchStato = !isLibero;
-                if (filtroStatoAttuale === 'ritardo') matchStato = isRitardo;
+                if (filtroStatoAttuale === 'ritardo') matchStato = isRitardoCalcolato;
+                if (filtroStatoAttuale === 'da_registrare') matchStato = isDaRegistrare;
+                if (filtroStatoAttuale === 'pronti') matchStato = isPronto;
 
                 return matchTesto && matchStato;
             });
 
+            // Calcoli per i contatori dei risultati filtrati
+            let numLiberi = 0;
+            let numAssegnati = 0;
+            let numDaRegistrare = 0;
+            let numPronti = 0;
+            let numInRitardo = 0;
+
+            databaseMappe.forEach(m => {
+                const isLibero = ["sì", "si", "true"].includes((m.disponibile || "").toString().toLowerCase());
+
+                if (isLibero) {
+                    numLiberi++;
+                } else {
+                    numAssegnati++;
+                }
+
+                if (!isLibero && m["assegnato il"]) {
+                    let dataAssegnazione = new Date(m["assegnato il"]);
+                    if (!isNaN(dataAssegnazione)) {
+                        let diffMesiAssegnazione = (oggi.getFullYear() - dataAssegnazione.getFullYear()) * 12 + (oggi.getMonth() - dataAssegnazione.getMonth());
+                        if (diffMesiAssegnazione >= 4) {
+                            numDaRegistrare++;
+                        }
+                    }
+                } else if (isLibero && m["restituito il"]) {
+                    let dataRestituzione = new Date(m["restituito il"]);
+                    if (!isNaN(dataRestituzione)) {
+                        let diffGiorni = Math.floor((oggi - dataRestituzione) / (1000 * 60 * 60 * 24));
+                        let diffMesiRestituzione = (oggi.getFullYear() - dataRestituzione.getFullYear()) * 12 + (oggi.getMonth() - dataRestituzione.getMonth());
+                        
+                        if (diffMesiRestituzione >= 6) {
+                            numInRitardo++;
+                        } else if (diffGiorni >= 7) {
+                            numPronti++;
+                        }
+                    }
+                }
+            });
+
+            // Aggiorna i testi dei contatori nell'interfaccia
             document.getElementById("risultati-count").innerText = `Trovati ${risultati.length} territori`;
+            document.getElementById("count-liberi").innerText = numLiberi;
+            document.getElementById("count-assegnati").innerText = numAssegnati;
+            document.getElementById("count-da-registrare").innerText = numDaRegistrare;
+            document.getElementById("count-pronti").innerText = numPronti;
+            document.getElementById("count-in-ritardo").innerText = numInRitardo;
 
             if (risultati.length === 0) {
                 contenitore.innerHTML = `
@@ -567,8 +706,45 @@
 
                 const isLibero = ["sì", "si", "true"].includes((mappa.disponibile || "").toString().toLowerCase());
                 const isCampagna = ["sì", "si", "true"].includes((mappa.campagna || "").toString().toLowerCase());
-                const isRitardo = ["sì", "si", "true"].includes((mappa["in ritardo"] || m["inritardo"] || "").toString().toLowerCase());
                 const nomePulito = (mappa.nome || '').replace(/'/g, "\\'");
+
+                let badgeSpecialeHTML = "";
+                let isRitardoCard = false;
+
+                if (!isLibero && mappa["assegnato il"]) {
+                    let dataAssegnazione = new Date(mappa["assegnato il"]);
+                    if (!isNaN(dataAssegnazione)) {
+                        let diffMesiAssegnazione = (oggi.getFullYear() - dataAssegnazione.getFullYear()) * 12 + (oggi.getMonth() - dataAssegnazione.getMonth());
+                        if (diffMesiAssegnazione >= 4) {
+                            badgeSpecialeHTML = `<div class="mt-2 text-[11px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2.5 py-1 rounded-lg border border-amber-200 dark:border-amber-800">⚠️ Territorio da registrare</div>`;
+                        }
+                    }
+                } else if (isLibero && mappa["restituito il"]) {
+                    let dataRestituzione = new Date(mappa["restituito il"]);
+                    if (!isNaN(dataRestituzione)) {
+                        let diffGiorni = Math.floor((oggi - dataRestituzione) / (1000 * 60 * 60 * 24));
+                        let diffMesiRestituzione = (oggi.getFullYear() - dataRestituzione.getFullYear()) * 12 + (oggi.getMonth() - dataRestituzione.getMonth());
+
+                        if (diffMesiRestituzione >= 6) {
+                            isRitardoCard = true;
+                            badgeSpecialeHTML = `<div class="mt-2 text-[11px] font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 px-2.5 py-1 rounded-lg border border-purple-200 dark:border-purple-800">📌 Territorio da lavorare</div>`;
+                        } else if (diffGiorni >= 7) {
+                            badgeSpecialeHTML = `<div class="mt-2 text-[11px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 px-2.5 py-1 rounded-lg border border-blue-200 dark:border-blue-800">🚀 Pronto a uscire</div>`;
+                        }
+                    }
+                }
+
+                // Generazione dinamica del pulsante "Rientra"
+                let pulsanteRientraHTML = "";
+                if (!isLibero) {
+                    pulsanteRientraHTML = `
+                        <button onclick="apriModalRientro(${mappa.riga})" 
+                                class="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 rounded-xl text-xs transition active:scale-95 shadow-sm" 
+                                title="Seleziona data e registra rientro">
+                            ↩️ Registra
+                        </button>
+                    `;
+                }
 
                 const card = document.createElement("div");
                 card.className = "bg-white dark:bg-slate-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-md border border-slate-200 dark:border-slate-700/80 transition flex flex-col relative group";
@@ -588,8 +764,8 @@
                         </label>
 
                         <!-- Badge Stato -->
-                        <span class="absolute top-2.5 right-2.5 px-3 py-1 rounded-full text-[11px] font-extrabold text-white shadow-md backdrop-blur-sm ${isLibero ? 'bg-emerald-600/90' : 'bg-red-600/90'} ${isRitardo ? 'ring-2 ring-amber-400' : ''}">
-                            ${isLibero ? "Disponibile" : "Assegnato"} ${isRitardo ? '⚠️' : ''}
+                        <span class="absolute top-2.5 right-2.5 px-3 py-1 rounded-full text-[11px] font-extrabold text-white shadow-md backdrop-blur-sm ${isLibero ? 'bg-emerald-600/90' : 'bg-red-600/90'} ${isRitardoCard ? 'ring-2 ring-red-400' : ''}">
+                            ${isLibero ? "Disponibile" : "Assegnato"} ${isRitardoCard ? '⚠️' : ''}
                         </span>
 
                         <!-- Pulsante Modifica -->
@@ -605,6 +781,7 @@
                                 <strong>${isLibero ? "Restituito il:" : "Assegnato il:"}</strong> 
                                 ${formattaDataItaliana(isLibero ? mappa["restituito il"] : mappa["assegnato il"])}
                             </p>
+                            ${badgeSpecialeHTML}
                         </div>
 
                         <div class="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-700/60">
@@ -614,10 +791,13 @@
                                    placeholder="Nome del proclamatore..." 
                                    class="w-full px-3 py-2 text-xs border border-slate-300 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-500">
 
-                            <button onclick="salvaAssegnazione(${mappa.riga}, '${nomePulito}')" 
-                                    class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-xl text-xs shadow-sm transition active:scale-95">
-                                Salva
-                            </button>
+                            <div class="flex gap-2">
+                                ${pulsanteRientraHTML}
+                                <button onclick="salvaAssegnazione(${mappa.riga}, '${nomePulito}')" 
+                                        class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-xl text-xs shadow-sm transition active:scale-95">
+                                    Salva
+                                </button>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -631,6 +811,83 @@
                 item.campagna = checked ? "Sì" : "No";
                 salvaSuStorageLocal();
                 syncConGAS({ action: "salva", riga: riga, campagna: checked });
+            }
+        }
+
+        function apriModalRientro(riga) {
+            document.getElementById("rientro-riga-id").value = riga;
+            const oggiStr = new Date().toISOString().split('T')[0];
+            document.getElementById("rientro-data-input").value = oggiStr;
+            document.getElementById("rientro-riascolto-checkbox").checked = false; // Reset del flag
+            document.getElementById("modal-rientro").classList.remove("hidden");
+        }
+
+        function chiudiModalRientro() {
+            document.getElementById("modal-rientro").classList.add("hidden");
+        }
+
+        async function confermaRientroTerritorio() {
+            const riga = parseInt(document.getElementById("rientro-riga-id").value);
+            const dataScelta = document.getElementById("rientro-data-input").value;
+            const isRiassegna = document.getElementById("rientro-riascolto-checkbox").checked;
+
+            if (!dataScelta) {
+                alert("Seleziona una data valida!");
+                return;
+            }
+
+            const item = databaseMappe.find(m => m.riga === riga);
+            if (!item) return;
+
+            const nomeMappa = (item.nome || '').replace(/'/g, "\\'");
+            const proclamatoreAttuale = item.assegnato || "";
+
+            if (isRiassegna) {
+                // Riassegna alla stessa persona aggiornando la data di assegnazione
+                item.disponibile = "No";
+                item["assegnato il"] = dataScelta;
+                item["in ritardo"] = "No";
+                // Il nome nel campo assegnato rimane invariato
+            } else {
+                // Rientro standard (restituito)
+                item.disponibile = "Sì";
+                item.assegnato = "";
+                item["restituito il"] = dataScelta;
+                item["in ritardo"] = "No";
+            }
+
+            salvaSuStorageLocal();
+            chiudiModalRientro();
+
+            const password = localStorage.getItem("pwdTerritori") || "1234";
+            try {
+                const response = await fetch(URL_SCRIPT, { 
+                    method: "POST", 
+                    body: JSON.stringify({ 
+                        action: "salva", 
+                        password: password, 
+                        riga: riga, 
+                        assegnato: isRiassegna ? proclamatoreAttuale : "",
+                        campagna: ["sì", "si", "true"].includes((item.campagna || "").toString().toLowerCase())
+                    }) 
+                });
+                const res = await response.json();
+                if (res.success) caricaDatiDaSheet();
+            } catch (error) {
+                console.warn("Modifica salvata in locale (offline)");
+            }
+
+            cercaMappa();
+
+            // Messaggio WhatsApp coerente con l'azione scelta
+            if (isRiassegna) {
+                let testo = `📌 *Territorio Riassegnato*\n🗺️ *Territorio:* ${item.nome}\n👤 *Assegnato a:* ${proclamatoreAttuale}\n📅 *Data Assegnazione:* ${formattaDataItaliana(dataScelta)}`;
+                urlWhatsAppCorrente = `https://api.whatsapp.com/send?text=${encodeURIComponent(testo)}`;
+                document.getElementById("wa-banner").classList.remove("hidden");
+            } else {
+                let testo = `📌 *Territorio Restituito*\n🗺️ *Territorio:* ${item.nome}\n📅 *Data Restituzione:* ${formattaDataItaliana(dataScelta)}`;
+                urlWhatsAppCorrente = `https://api.whatsapp.com/send?text=${encodeURIComponent(testo)}`;
+                document.getElementById("wa-banner").classList.remove("hidden");
             }
         }
 
@@ -829,3 +1086,5 @@
     </script>
 </body>
 </html>
+
+

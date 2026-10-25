@@ -7,7 +7,7 @@
     
     <!-- PWA Primary Meta Tags -->
     <meta name="theme-color" content="#1e293b">
-    <meta name="description" content="App per la gestione dei territori di predicazione a Roccamorice e zone limitrofe.">
+    <meta name="description" content="App per la gestione dei territori di predicazione a Roccamorice e zone limitrofe[span_4](start_span)[span_4](end_span).">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Territori">
@@ -78,6 +78,10 @@
         ::-webkit-scrollbar-thumb {
             background: rgba(100, 116, 139, 0.4);
             border-radius: 9999px;
+        }
+
+        .badge-shadow {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
         }
 
         .clickable-counter {
@@ -491,7 +495,7 @@
                 }
             } catch (error) {
                 // Fallback login locale se offline
-                if (inputPwd === "1234" || inputPwd.length > 0) {
+                if (inputPwd === "1234") {
                     localStorage.setItem("accessoTerritori", "ok");
                     localStorage.setItem("pwdTerritori", inputPwd);
                     mostraContenuti();
@@ -518,7 +522,7 @@
         async function caricaDatiDaSheet() {
             const statusEl = document.getElementById("status-text");
             try {
-                if (statusEl) statusEl.innerText = "Sincronizzazione in corso...";
+                statusEl.innerText = "Sincronizzazione in corso...";
                 const response = await fetch(URL_SCRIPT);
                 databaseMappe = await response.json();
                 salvaSuStorageLocal();
@@ -814,7 +818,7 @@
             document.getElementById("rientro-riga-id").value = riga;
             const oggiStr = new Date().toISOString().split('T')[0];
             document.getElementById("rientro-data-input").value = oggiStr;
-            document.getElementById("rientro-riascolto-checkbox").checked = false;
+            document.getElementById("rientro-riascolto-checkbox").checked = false; // Reset del flag
             document.getElementById("modal-rientro").classList.remove("hidden");
         }
 
@@ -835,13 +839,17 @@
             const item = databaseMappe.find(m => m.riga === riga);
             if (!item) return;
 
+            const nomeMappa = (item.nome || '').replace(/'/g, "\\'");
             const proclamatoreAttuale = item.assegnato || "";
 
             if (isRiassegna) {
+                // Riassegna alla stessa persona aggiornando la data di assegnazione
                 item.disponibile = "No";
                 item["assegnato il"] = dataScelta;
                 item["in ritardo"] = "No";
+                // Il nome nel campo assegnato rimane invariato
             } else {
+                // Rientro standard (restituito)
                 item.disponibile = "Sì";
                 item.assegnato = "";
                 item["restituito il"] = dataScelta;
@@ -871,6 +879,7 @@
 
             cercaMappa();
 
+            // Messaggio WhatsApp coerente con l'azione scelta
             if (isRiassegna) {
                 let testo = `📌 *Territorio Riassegnato*\n🗺️ *Territorio:* ${item.nome}\n👤 *Assegnato a:* ${proclamatoreAttuale}\n📅 *Data Assegnazione:* ${formattaDataItaliana(dataScelta)}`;
                 urlWhatsAppCorrente = `https://api.whatsapp.com/send?text=${encodeURIComponent(testo)}`;
@@ -929,6 +938,7 @@
 
             cercaMappa();
 
+            // Costruzione messaggio WhatsApp
             if (nuovoAssegnato !== "") {
                 let testo = `📌 *Territorio Assegnato*\n🗺️ *Territorio:* ${nomeMappa}\n👤 *Assegnato a:* ${nuovoAssegnato}`;
                 if (isCampagna) testo += `\n🚀 *In Campagna:* Sì`;
@@ -965,6 +975,7 @@
             document.getElementById("wa-banner").classList.add("hidden");
         }
 
+        // Modale Gestione Territorio
         function apriModalNuovoTerritorio() {
             document.getElementById("edit-riga-id").value = "";
             document.getElementById("modal-title").innerText = "Nuovo Territorio";
@@ -1053,6 +1064,7 @@
             cercaMappa();
         }
 
+        // Modale Configurazione GAS
         function apriModalConfigGAS() {
             document.getElementById("gas-url-input").value = URL_SCRIPT;
             document.getElementById("modal-gas").classList.remove("hidden");
@@ -1071,10 +1083,8 @@
             chiudiModalConfigGAS();
             caricaDatiDaSheet();
         }
-
-        function installPWA() {
-            console.log("Installazione PWA avviata");
-        }
     </script>
 </body>
 </html>
+
+

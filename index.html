@@ -7,7 +7,7 @@
     
     <!-- PWA Primary Meta Tags -->
     <meta name="theme-color" content="#1e293b">
-    <meta name="description" content="App per la gestione dei territori di predicazione a Roccamorice e zone limitrofe[span_4](start_span)[span_4](end_span).">
+    <meta name="description" content="App per la gestione dei territori di predicazione a Roccamorice e zone limitrofe.">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Territori">
@@ -255,7 +255,7 @@
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 px-1">
             <div class="flex flex-col gap-1 text-xs font-semibold text-slate-500 dark:text-slate-400">
                 <div class="flex flex-wrap items-center gap-2">
-                    <span id="risultati-count">Trovati 0 territori</span>
+                    <span onclick="selezionaFiltroContatore('tutti')" class="clickable-counter text-slate-700 dark:text-slate-200 font-bold underline decoration-dotted" id="risultati-count">Trovati 0 territori</span>
                     <span class="text-slate-300 dark:text-slate-600">•</span>
                     <span onclick="selezionaFiltroContatore('disponibile')" class="clickable-counter text-emerald-600 dark:text-emerald-400 underline decoration-dotted">Liberi: <strong id="count-liberi">0</strong></span>
                     <span class="text-slate-300 dark:text-slate-600">•</span>
@@ -494,7 +494,6 @@
                     erroreEl.classList.remove("hidden");
                 }
             } catch (error) {
-                // Fallback login locale se offline
                 if (inputPwd === "1234") {
                     localStorage.setItem("accessoTerritori", "ok");
                     localStorage.setItem("pwdTerritori", inputPwd);
@@ -570,16 +569,17 @@
                 } else {
                     e.currentTarget.className = "status-btn active px-4 py-1.5 text-xs font-bold rounded-full border border-slate-800 bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900 transition";
                 }
+            } else if (stato === 'tutti') {
+                const tuttiBtn = document.querySelector('button[onclick*="\'tutti\'"]');
+                if (tuttiBtn) {
+                    tuttiBtn.className = "status-btn active px-4 py-1.5 text-xs font-bold rounded-full border border-slate-800 bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900 transition";
+                }
             }
             cercaMappa();
         }
 
         function selezionaFiltroContatore(tipo) {
-            filtroStatoAttuale = tipo;
-            document.querySelectorAll('.status-btn').forEach(btn => {
-                btn.className = "status-btn px-4 py-1.5 text-xs font-bold rounded-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition";
-            });
-            cercaMappa();
+            filtraStato(null, tipo);
         }
 
         function formattaDataItaliana(stringaData) {
@@ -599,11 +599,15 @@
 
             const oggi = new Date();
 
-            const risultati = databaseMappe.filter(m => {
+            // Calcola il totale dei territori corrispondenti alla ricerca testuale (indipendentemente dal filtro di stato)
+            const risultatiTotaliSenzaStato = databaseMappe.filter(m => {
                 const matchNome = m.nome ? m.nome.toLowerCase().includes(input) : false;
                 const matchAssegnato = m.assegnato ? m.assegnato.toLowerCase().includes(input) : false;
-                const matchTesto = matchNome || matchAssegnato;
+                return matchNome || matchAssegnato;
+            });
 
+            // Calcola i risultati filtrati completi (inclusi i filtri di stato)
+            const risultati = risultatiTotaliSenzaStato.filter(m => {
                 const isLibero = ["sì", "si", "true"].includes((m.disponibile || "").toString().toLowerCase());
                 
                 let isRitardoCalcolato = false;
@@ -638,10 +642,10 @@
                 if (filtroStatoAttuale === 'da_registrare') matchStato = isDaRegistrare;
                 if (filtroStatoAttuale === 'pronti') matchStato = isPronto;
 
-                return matchTesto && matchStato;
+                return matchStato;
             });
 
-            // Calcoli per i contatori dei risultati filtrati
+            // Calcoli per i contatori globali
             let numLiberi = 0;
             let numAssegnati = 0;
             let numDaRegistrare = 0;
@@ -680,8 +684,8 @@
                 }
             });
 
-            // Aggiorna i testi dei contatori nell'interfaccia
-            document.getElementById("risultati-count").innerText = `Trovati ${risultati.length} territori`;
+            // Aggiorna i testi dei contatori
+            document.getElementById("risultati-count").innerText = `Trovati ${risultatiTotaliSenzaStato.length} territori`;
             document.getElementById("count-liberi").innerText = numLiberi;
             document.getElementById("count-assegnati").innerText = numAssegnati;
             document.getElementById("count-da-registrare").innerText = numDaRegistrare;
@@ -734,7 +738,6 @@
                     }
                 }
 
-                // Generazione dinamica del pulsante "Rientra"
                 let pulsanteRientraHTML = "";
                 if (!isLibero) {
                     pulsanteRientraHTML = `
@@ -757,18 +760,15 @@
                              class="w-full h-full object-cover group-hover:scale-105 transition duration-300 cursor-pointer"
                              onerror="this.src='https://placehold.co/400x250/1e293b/ffffff?text=Territorio'">
                         
-                        <!-- Badge Campagna -->
                         <label class="absolute top-2.5 left-2.5 bg-amber-600/90 hover:bg-amber-600 text-white text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-md backdrop-blur-sm cursor-pointer select-none" onclick="event.stopPropagation();">
                             <input type="checkbox" id="input-campagna-${mappa.riga}" ${isCampagna ? 'checked' : ''} onchange="toggleCampagna(${mappa.riga}, this.checked)" class="w-3.5 h-3.5 accent-amber-500 rounded">
                             <span>Campagna 🚀</span>
                         </label>
 
-                        <!-- Badge Stato -->
                         <span class="absolute top-2.5 right-2.5 px-3 py-1 rounded-full text-[11px] font-extrabold text-white shadow-md backdrop-blur-sm ${isLibero ? 'bg-emerald-600/90' : 'bg-red-600/90'} ${isRitardoCard ? 'ring-2 ring-red-400' : ''}">
                             ${isLibero ? "Disponibile" : "Assegnato"} ${isRitardoCard ? '⚠️' : ''}
                         </span>
 
-                        <!-- Pulsante Modifica -->
                         <button onclick="apriModalEditTerritorio(${mappa.riga})" class="absolute bottom-2.5 right-2.5 bg-slate-900/80 hover:bg-slate-900 text-white p-2 rounded-full text-xs shadow-md transition" title="Modifica Territorio">
                             ✏️
                         </button>
@@ -818,7 +818,7 @@
             document.getElementById("rientro-riga-id").value = riga;
             const oggiStr = new Date().toISOString().split('T')[0];
             document.getElementById("rientro-data-input").value = oggiStr;
-            document.getElementById("rientro-riascolto-checkbox").checked = false; // Reset del flag
+            document.getElementById("rientro-riascolto-checkbox").checked = false;
             document.getElementById("modal-rientro").classList.remove("hidden");
         }
 
@@ -843,13 +843,10 @@
             const proclamatoreAttuale = item.assegnato || "";
 
             if (isRiassegna) {
-                // Riassegna alla stessa persona aggiornando la data di assegnazione
                 item.disponibile = "No";
                 item["assegnato il"] = dataScelta;
                 item["in ritardo"] = "No";
-                // Il nome nel campo assegnato rimane invariato
             } else {
-                // Rientro standard (restituito)
                 item.disponibile = "Sì";
                 item.assegnato = "";
                 item["restituito il"] = dataScelta;
@@ -879,7 +876,6 @@
 
             cercaMappa();
 
-            // Messaggio WhatsApp coerente con l'azione scelta
             if (isRiassegna) {
                 let testo = `📌 *Territorio Riassegnato*\n🗺️ *Territorio:* ${item.nome}\n👤 *Assegnato a:* ${proclamatoreAttuale}\n📅 *Data Assegnazione:* ${formattaDataItaliana(dataScelta)}`;
                 urlWhatsAppCorrente = `https://api.whatsapp.com/send?text=${encodeURIComponent(testo)}`;
@@ -938,7 +934,6 @@
 
             cercaMappa();
 
-            // Costruzione messaggio WhatsApp
             if (nuovoAssegnato !== "") {
                 let testo = `📌 *Territorio Assegnato*\n🗺️ *Territorio:* ${nomeMappa}\n👤 *Assegnato a:* ${nuovoAssegnato}`;
                 if (isCampagna) testo += `\n🚀 *In Campagna:* Sì`;
@@ -975,7 +970,6 @@
             document.getElementById("wa-banner").classList.add("hidden");
         }
 
-        // Modale Gestione Territorio
         function apriModalNuovoTerritorio() {
             document.getElementById("edit-riga-id").value = "";
             document.getElementById("modal-title").innerText = "Nuovo Territorio";
@@ -1064,7 +1058,6 @@
             cercaMappa();
         }
 
-        // Modale Configurazione GAS
         function apriModalConfigGAS() {
             document.getElementById("gas-url-input").value = URL_SCRIPT;
             document.getElementById("modal-gas").classList.remove("hidden");
@@ -1086,5 +1079,3 @@
     </script>
 </body>
 </html>
-
-
